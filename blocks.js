@@ -15,13 +15,27 @@ export const blocks = [
         color: 0x555555,
         castShadow: true,
       },
+      {
+        position: [0, -2.5, 0],
+        color: 0x555555,
+        castShadow: true,
+      },
     ],
     components: [
       {
         url: "/assets/component_stylish_a.glb",
         castShadow: true,
         roughness: 0.4,
-        position: [0, -3.1, 0],
+        position: [0, -3.2, 0],
+      },
+      {
+        shape: "plane",
+        size: [2, 3],
+        position: [0, -2.5, -0.5],
+        type: "unlit",
+        video: { url: "/assets/godrays.mp4" },
+        castShadow: false,
+        receiveShadow: false,
       },
     ],
   },
@@ -140,7 +154,6 @@ export const blocks = [
   {
     url: "/assets/block_tv.glb",
     texture: "/assets/tv_color_a.jpg",
-    roughness: 0.35,
     receiveShadow: true,
     lights: [
       {
