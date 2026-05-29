@@ -1,7 +1,7 @@
 export const blocks = [
   {
-    url: "/assets/block_stylish.glb",
-    normalMap: "/assets/block_stylish_norm.jpg",
+    url: "./assets/block_stylish.glb",
+    normalMap: "./assets/block_stylish_norm.jpg",
     roughness: 0.4,
     receiveShadow: true,
     lights: [
@@ -23,7 +23,7 @@ export const blocks = [
     ],
     components: [
       {
-        url: "/assets/component_stylish_a.glb",
+        url: "./assets/component_stylish_a.glb",
         castShadow: true,
         roughness: 0.4,
         position: [0, -3.2, 0],
@@ -33,16 +33,16 @@ export const blocks = [
         size: [2, 3],
         position: [0, -2.5, -0.5],
         type: "unlit",
-        video: { url: "/assets/godrays.mp4" },
+        video: { url: "./assets/godrays.mp4" },
         castShadow: false,
         receiveShadow: false,
       },
     ],
   },
   {
-    url: "/assets/block_fountain.glb",
-    texture: "/assets/block_fountain_color.jpg",
-    normalMap: "/assets/block_fountain_norm.jpg",
+    url: "./assets/block_fountain.glb",
+    texture: "./assets/block_fountain_color.jpg",
+    normalMap: "./assets/block_fountain_norm.jpg",
     roughness: 0.4,
     receiveShadow: true,
     lights: [
@@ -59,30 +59,30 @@ export const blocks = [
     ],
     components: [
       {
-        url: "/assets/component_fountain_a.glb",
+        url: "./assets/component_fountain_a.glb",
         castShadow: true,
-        texture: "/assets/fountain_color_a.jpg",
-        normalMap: "/assets/fountain_norm_a.jpg",
+        texture: "./assets/fountain_color_a.jpg",
+        normalMap: "./assets/fountain_norm_a.jpg",
         roughness: 0.4,
         position: [0, -2.85, 0.3],
       },
       {
-        url: "/assets/component_fountain_b.glb",
+        url: "./assets/component_fountain_b.glb",
         castShadow: true,
-        texture: "/assets/fountain_color_b.jpg",
+        texture: "./assets/fountain_color_b.jpg",
         roughness: 0.4,
         position: [0, -3, 0.6],
       },
       {
-        url: "/assets/component_fountain_c.glb",
+        url: "./assets/component_fountain_c.glb",
         castShadow: true,
-        texture: "/assets/fountain_color_c.jpg",
-        normalMap: "/assets/fountain_norm_c.jpg",
+        texture: "./assets/fountain_color_c.jpg",
+        normalMap: "./assets/fountain_norm_c.jpg",
         roughness: 0.4,
         position: [0, -2.45, 0.7],
       },
       {
-        url: "/assets/component_fountain_d.glb",
+        url: "./assets/component_fountain_d.glb",
         castShadow: true,
         type: "water",
         color: 0x325587,
@@ -152,8 +152,8 @@ export const blocks = [
     ],
   },
   {
-    url: "/assets/block_tv.glb",
-    texture: "/assets/tv_color_a.jpg",
+    url: "./assets/block_tv.glb",
+    texture: "./assets/tv_color_a.jpg",
     receiveShadow: true,
     lights: [
       {
@@ -164,8 +164,8 @@ export const blocks = [
     ],
     components: [
       {
-        url: "/assets/component_tv_a.glb",
-        video: { url: "/assets/tv_1.mp4" },
+        url: "./assets/component_tv_a.glb",
+        video: { url: "./assets/tv_1.mp4" },
         type: "unlit",
         castShadow: false,
         position: [0, -2.85, 0.05],
