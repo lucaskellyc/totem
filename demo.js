@@ -44,16 +44,35 @@ const bloomPass = new UnrealBloomPass(
 composer.addPass(bloomPass);
 composer.addPass(new OutputPass());
 
-const stack = new Stack();
+const loadingManager = new THREE.LoadingManager();
+const loadingFill = document.getElementById("loading-bar-fill");
+loadingManager.onProgress = (_url, loaded, total) => {
+  if (loadingFill) loadingFill.style.width = `${(loaded / total) * 100}%`;
+};
+
+const stack = new Stack({ loadingManager });
 scene.add(stack);
 
 await stack.loadBlocks(blocks);
-document.getElementById("loading")?.classList.add("done");
+if (loadingFill) {
+  loadingFill.style.width = "100%";
+  setTimeout(() => {
+    loadingFill.classList.add("complete");
+  }, 1000);
+}
+setTimeout(() => {
+  document.getElementById("loading")?.classList.add("done");
+}, 2000);
 
 const interact = attachInteract(renderer.domElement, stack, {
   autoScroll: 0.02,
   autoScrollResumeDelay: 1000,
 });
+
+for (const ev of ["gesturestart", "gesturechange", "gestureend"]) {
+  window.addEventListener(ev, (e) => e.preventDefault());
+}
+document.addEventListener("dblclick", (e) => e.preventDefault());
 
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
