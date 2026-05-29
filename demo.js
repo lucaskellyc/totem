@@ -20,8 +20,8 @@ camera.lookAt(0, -5.5, 0);
 
 const ZOOM_WIDE_WIDTH = 1200;
 const ZOOM_NARROW_WIDTH = 400;
-const ZOOM_BASE_Z = 8;
-const ZOOM_FAR_Z = 14;
+const ZOOM_BASE_Z = 5;
+const ZOOM_FAR_Z = 6;
 function fitCameraZoom() {
   const t = THREE.MathUtils.clamp(
     (ZOOM_WIDE_WIDTH - window.innerWidth) /
