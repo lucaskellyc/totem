@@ -18,6 +18,21 @@ const camera = new THREE.PerspectiveCamera(
 camera.position.set(0, -5.5, 8);
 camera.lookAt(0, -5.5, 0);
 
+const ZOOM_WIDE_WIDTH = 1200;
+const ZOOM_NARROW_WIDTH = 400;
+const ZOOM_BASE_Z = 8;
+const ZOOM_FAR_Z = 14;
+function fitCameraZoom() {
+  const t = THREE.MathUtils.clamp(
+    (ZOOM_WIDE_WIDTH - window.innerWidth) /
+      (ZOOM_WIDE_WIDTH - ZOOM_NARROW_WIDTH),
+    0,
+    1,
+  );
+  camera.position.z = THREE.MathUtils.lerp(ZOOM_BASE_Z, ZOOM_FAR_Z, t);
+}
+fitCameraZoom();
+
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -77,6 +92,7 @@ document.addEventListener("dblclick", (e) => e.preventDefault());
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
+  fitCameraZoom();
   renderer.setSize(window.innerWidth, window.innerHeight);
   composer.setSize(window.innerWidth, window.innerHeight);
 });
