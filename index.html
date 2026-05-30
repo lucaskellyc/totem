@@ -24,6 +24,9 @@
                 touch-action: manipulation;
                 -webkit-text-size-adjust: 100%;
             }
+            canvas {
+                user-select: none;
+            }
             canvas:active {
                 cursor: grabbing;
             }
@@ -73,6 +76,7 @@
                 gap: 24px;
                 background: black;
                 z-index: 1;
+                user-select: none;
                 transition:
                     opacity 0.7s ease,
                     filter 0.6s ease,
