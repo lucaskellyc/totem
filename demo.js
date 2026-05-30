@@ -23,6 +23,13 @@ const ZOOM_WIDE_WIDTH = 1200;
 const ZOOM_NARROW_WIDTH = 400;
 const ZOOM_BASE_Z = 4;
 const ZOOM_FAR_Z = 5;
+let baseCameraZ = ZOOM_BASE_Z;
+const intro = {
+  started: false,
+  startTime: 0,
+  duration: 1000,
+  zOffset: 2,
+};
 function fitCameraZoom() {
   const t = THREE.MathUtils.clamp(
     (ZOOM_WIDE_WIDTH - window.innerWidth) /
@@ -30,9 +37,10 @@ function fitCameraZoom() {
     0,
     1,
   );
-  camera.position.z = THREE.MathUtils.lerp(ZOOM_BASE_Z, ZOOM_FAR_Z, t);
+  baseCameraZ = THREE.MathUtils.lerp(ZOOM_BASE_Z, ZOOM_FAR_Z, t);
 }
 fitCameraZoom();
+camera.position.z = baseCameraZ + intro.zOffset;
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 const canvasEl = renderer.domElement;
@@ -190,6 +198,9 @@ setTimeout(() => {
 }, 1000);
 setTimeout(() => {
   document.getElementById("loading")?.classList.add("done");
+  canvasEl.classList.add("intro-done");
+  intro.started = true;
+  intro.startTime = performance.now();
 }, 2500);
 
 const interact = attachInteract(renderer.domElement, stack, {
@@ -217,6 +228,11 @@ function animate() {
   requestAnimationFrame(animate);
   interact.update();
   stack.update();
+  const introT = intro.started
+    ? Math.min((performance.now() - intro.startTime) / intro.duration, 1)
+    : 0;
+  const eased = 1 - Math.pow(1 - introT, 3);
+  camera.position.z = baseCameraZ + (1 - eased) * intro.zOffset;
   composer.render();
 }
 animate();
