@@ -35,18 +35,21 @@ function fitCameraZoom() {
 fitCameraZoom();
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
+const canvasEl = renderer.domElement;
+document.body.appendChild(canvasEl);
+renderer.setSize(canvasEl.clientWidth, canvasEl.clientHeight, false);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setClearColor(0x000000, 1);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
-document.body.appendChild(renderer.domElement);
+camera.aspect = canvasEl.clientWidth / canvasEl.clientHeight;
+camera.updateProjectionMatrix();
 
 //scene.add(new THREE.AmbientLight(0xffffff, 0.2));
 
 const composerTarget = new THREE.WebGLRenderTarget(
-  window.innerWidth,
-  window.innerHeight,
+  canvasEl.clientWidth,
+  canvasEl.clientHeight,
   { samples: 4, type: THREE.HalfFloatType },
 );
 const composer = new EffectComposer(renderer, composerTarget);
@@ -82,7 +85,7 @@ const fisheyePass = new ShaderPass({
 });
 composer.addPass(fisheyePass);
 const bloomPass = new UnrealBloomPass(
-  new THREE.Vector2(window.innerWidth, window.innerHeight),
+  new THREE.Vector2(canvasEl.clientWidth, canvasEl.clientHeight),
   0.2,
   0.6,
   0.8,
@@ -91,11 +94,11 @@ composer.addPass(bloomPass);
 const vignetteBlurPass = new ShaderPass({
   uniforms: {
     tDiffuse: { value: null },
-    uInner: { value: 0.5 },
-    uOuter: { value: 1.1 },
-    uRadius: { value: 0.012 },
+    uInner: { value: 0.3 },
+    uOuter: { value: 1.0 },
+    uRadius: { value: 0.03 },
     uAspect: {
-      value: window.innerWidth / window.innerHeight,
+      value: canvasEl.clientWidth / canvasEl.clientHeight,
     },
   },
   vertexShader: `
@@ -200,13 +203,14 @@ for (const ev of ["gesturestart", "gesturechange", "gestureend"]) {
 document.addEventListener("dblclick", (e) => e.preventDefault());
 
 window.addEventListener("resize", () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
+  const w = canvasEl.clientWidth;
+  const h = canvasEl.clientHeight;
+  camera.aspect = w / h;
   camera.updateProjectionMatrix();
   fitCameraZoom();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  composer.setSize(window.innerWidth, window.innerHeight);
-  vignetteBlurPass.uniforms.uAspect.value =
-    window.innerWidth / window.innerHeight;
+  renderer.setSize(w, h, false);
+  composer.setSize(w, h);
+  vignetteBlurPass.uniforms.uAspect.value = w / h;
 });
 
 function animate() {
