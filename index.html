@@ -21,10 +21,6 @@
                 touch-action: manipulation;
                 -webkit-text-size-adjust: 100%;
             }
-            canvas {
-                display: block;
-                cursor: grab;
-            }
             canvas:active {
                 cursor: grabbing;
             }
@@ -48,6 +44,7 @@
                 text-decoration: none;
                 font: inherit;
                 line-height: 1;
+                z-index: 0;
                 transition:
                     background 0.18s ease,
                     border-color 0.18s ease;
@@ -72,7 +69,7 @@
                 justify-content: center;
                 gap: 24px;
                 background: black;
-                backdrop-filter: blur(24px) brightness(0.1);
+                z-index: 1;
                 transition: opacity 0.3s ease;
             }
             #loading.done {
@@ -90,7 +87,7 @@
                 background: rgba(255, 255, 255, 0.1);
                 overflow: hidden;
                 opacity: 0;
-                transition: opacity 0.4s ease;
+                transition: opacity 1.5s ease;
             }
             #loading-bar.visible {
                 opacity: 1;
@@ -102,7 +99,8 @@
                 background: #cfd2d6;
                 transition:
                     width 0.18s ease,
-                    background 0.5s ease;
+                    background 0.5s ease,
+                    opacity 0.5s ease;
             }
             #loading-bar-fill.complete {
                 background: repeating-linear-gradient(
@@ -145,7 +143,7 @@
             lottie.loadAnimation({
                 container: document.getElementById("loading-lottie"),
                 renderer: "svg",
-                loop: true,
+                loop: false,
                 autoplay: true,
                 path: "./assets/logo.json",
             });
