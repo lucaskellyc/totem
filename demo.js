@@ -51,18 +51,48 @@ const composerTarget = new THREE.WebGLRenderTarget(
 );
 const composer = new EffectComposer(renderer, composerTarget);
 composer.addPass(new RenderPass(scene, camera));
+const fisheyePass = new ShaderPass({
+  uniforms: {
+    tDiffuse: { value: null },
+    uStrength: { value: -0.1 },
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    uniform sampler2D tDiffuse;
+    uniform float uStrength;
+    varying vec2 vUv;
+    void main() {
+      vec2 p = vUv * 2.0 - 1.0;
+      float r2 = dot(p, p);
+      vec2 sampleUv = (p * (1.0 - uStrength * r2)) * 0.5 + 0.5;
+      if (sampleUv.x < 0.0 || sampleUv.x > 1.0 ||
+          sampleUv.y < 0.0 || sampleUv.y > 1.0) {
+        gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+      } else {
+        gl_FragColor = texture2D(tDiffuse, sampleUv);
+      }
+    }
+  `,
+});
+composer.addPass(fisheyePass);
 const bloomPass = new UnrealBloomPass(
   new THREE.Vector2(window.innerWidth, window.innerHeight),
   0.2,
   0.6,
-  0.6,
+  0.8,
 );
 composer.addPass(bloomPass);
 const vignetteBlurPass = new ShaderPass({
   uniforms: {
     tDiffuse: { value: null },
     uInner: { value: 0.4 },
-    uOuter: { value: 0.9 },
+    uOuter: { value: 1.0 },
     uRadius: { value: 0.012 },
     uAspect: {
       value: window.innerWidth / window.innerHeight,
@@ -127,8 +157,7 @@ const vignettePass = new ShaderPass({
     varying vec2 vUv;
     void main() {
       vec4 tex = texture2D(tDiffuse, vUv);
-      vec2 p = vUv - 0.5;
-      float d = length(p) * 1.41421356;
+      float d = abs(vUv.y - 0.5) * 2.0;
       float v = smoothstep(uInner, uOuter, d);
       vec3 col = mix(tex.rgb, uColor, v * uStrength);
       gl_FragColor = vec4(col, tex.a);
