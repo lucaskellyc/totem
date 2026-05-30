@@ -178,6 +178,7 @@ scene.add(stack);
 
 await new Promise((resolve) => setTimeout(resolve, 1500));
 document.getElementById("loading-bar")?.classList.add("visible");
+await new Promise((resolve) => setTimeout(resolve, 500));
 await stack.loadBlocks(blocks);
 if (loadingFill) {
   loadingFill.style.width = "100%";
