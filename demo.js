@@ -172,23 +172,22 @@ const loadingFill = document.getElementById("loading-bar-fill");
 loadingManager.onProgress = (_url, loaded, total) => {
   if (loadingFill) loadingFill.style.width = `${(loaded / total) * 100}%`;
 };
+document.getElementById("loading-bar")?.classList.add("visible");
 
 const stack = new Stack({ loadingManager });
 scene.add(stack);
 
 await new Promise((resolve) => setTimeout(resolve, 1500));
-document.getElementById("loading-bar")?.classList.add("visible");
-await new Promise((resolve) => setTimeout(resolve, 500));
 await stack.loadBlocks(blocks);
 if (loadingFill) {
   loadingFill.style.width = "100%";
-  setTimeout(() => {
-    loadingFill.classList.add("complete");
-  }, 1000);
 }
 setTimeout(() => {
+  loadingFill.classList.add("complete");
+}, 1000);
+setTimeout(() => {
   document.getElementById("loading")?.classList.add("done");
-}, 2000);
+}, 2500);
 
 const interact = attachInteract(renderer.domElement, stack, {
   autoScroll: 0.02,
