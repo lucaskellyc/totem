@@ -91,8 +91,8 @@ composer.addPass(bloomPass);
 const vignetteBlurPass = new ShaderPass({
   uniforms: {
     tDiffuse: { value: null },
-    uInner: { value: 0.4 },
-    uOuter: { value: 1.0 },
+    uInner: { value: 0.5 },
+    uOuter: { value: 1.1 },
     uRadius: { value: 0.012 },
     uAspect: {
       value: window.innerWidth / window.innerHeight,
@@ -137,8 +137,8 @@ const vignettePass = new ShaderPass({
   uniforms: {
     tDiffuse: { value: null },
     uStrength: { value: 1 },
-    uInner: { value: 0.4 },
-    uOuter: { value: 0.9 },
+    uInner: { value: 0.7 },
+    uOuter: { value: 1.0 },
     uColor: { value: new THREE.Color(0x000000) },
   },
   vertexShader: `
