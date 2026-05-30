@@ -8,6 +8,9 @@
         />
         <title>totem — three.js infinite scroll stack</title>
         <style>
+            * {
+                user-select: none;
+            }
             html,
             body {
                 margin: 0;
@@ -70,10 +73,15 @@
                 gap: 24px;
                 background: black;
                 z-index: 1;
-                transition: opacity 0.3s ease;
+                transition:
+                    opacity 0.7s ease,
+                    filter 0.6s ease,
+                    transform 0.6s ease;
             }
             #loading.done {
+                filter: blur(16px);
                 opacity: 0;
+                transform: scale(1.1);
                 pointer-events: none;
             }
             #loading-lottie {
