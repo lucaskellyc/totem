@@ -38,6 +38,11 @@
                 -webkit-user-drag: none;
                 -webkit-tap-highlight-color: transparent;
                 touch-action: none;
+                filter: blur(28px);
+                transition: filter 1.6s ease;
+            }
+            canvas.intro-done {
+                filter: blur(0);
             }
             canvas:active {
                 cursor: grabbing;
