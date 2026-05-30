@@ -79,12 +79,21 @@
                 opacity: 0;
                 pointer-events: none;
             }
+            #loading-lottie {
+                width: 440px;
+                height: 248px;
+            }
             #loading-bar {
                 border-radius: 25px;
                 width: 180px;
                 height: 10px;
                 background: rgba(255, 255, 255, 0.1);
                 overflow: hidden;
+                opacity: 0;
+                transition: opacity 0.4s ease;
+            }
+            #loading-bar.visible {
+                opacity: 1;
             }
             #loading-bar-fill {
                 border-radius: 25px;
@@ -100,8 +109,8 @@
                     45deg,
                     #cfd2d6 0,
                     #cfd2d6 6px,
-                    rgba(207, 210, 214, 0.45) 6px,
-                    rgba(207, 210, 214, 0.45) 12px
+                    rgba(207, 210, 214, 0.6) 6px,
+                    rgba(207, 210, 214, 0.6) 12px
                 );
                 background-size: 200% 100%;
                 animation: loading-bar-stripes 0.6s linear infinite;
@@ -119,16 +128,28 @@
             {
                 "imports": {
                     "three": "https://esm.sh/three@0.184.0",
-                    "three/addons/": "https://esm.sh/three@0.184.0/examples/jsm/"
+                    "three/addons/": "https://esm.sh/three@0.184.0/examples/jsm/",
+                    "lottie-web": "https://esm.sh/lottie-web@5.12.2"
                 }
             }
         </script>
     </head>
     <body>
         <div id="loading">
+            <div id="loading-lottie"></div>
             <div id="loading-bar"><div id="loading-bar-fill"></div></div>
-            <div>Please hold...</div>
+            <!--<div>Please hold...</div>-->
         </div>
+        <script type="module">
+            import lottie from "lottie-web";
+            lottie.loadAnimation({
+                container: document.getElementById("loading-lottie"),
+                renderer: "svg",
+                loop: true,
+                autoplay: true,
+                path: "./assets/logo.json",
+            });
+        </script>
         <!--<div id="hint">scroll to navigate</div>-->
         <a
             id="repo-link"

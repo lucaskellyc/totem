@@ -176,6 +176,8 @@ loadingManager.onProgress = (_url, loaded, total) => {
 const stack = new Stack({ loadingManager });
 scene.add(stack);
 
+await new Promise((resolve) => setTimeout(resolve, 1500));
+document.getElementById("loading-bar")?.classList.add("visible");
 await stack.loadBlocks(blocks);
 if (loadingFill) {
   loadingFill.style.width = "100%";
