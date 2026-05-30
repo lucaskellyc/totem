@@ -27,7 +27,7 @@ let baseCameraZ = ZOOM_BASE_Z;
 const intro = {
   started: false,
   startTime: 0,
-  duration: 1000,
+  duration: 500,
   zOffset: 2,
 };
 function fitCameraZoom() {
