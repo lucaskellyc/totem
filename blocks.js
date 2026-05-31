@@ -19,6 +19,7 @@ export const blocks = [
         position: [0, -2.5, 0],
         color: 0x555555,
         castShadow: true,
+        behavior: { type: "pulse", rate: 0.4, min: 0.5, max: 1.0 },
       },
     ],
     components: [
