@@ -1,6 +1,6 @@
 # totem
 
-Infinite vertical scroll primitive for [three.js](https://threejs.org/). Stack 3D blocks, scroll the wheel, and they loop forever.
+Infinite vertical scroll primitive for [three.js](https://threejs.org/). Stack 3D blocks into a totem, scroll the wheel, and they loop forever.
 
 **[Live demo →](https://lucaskellyc.github.io/totem/)**
 
@@ -8,18 +8,18 @@ Infinite vertical scroll primitive for [three.js](https://threejs.org/). Stack 3
 
 ```bash
 npm i three
-npm i github:<user>/totem
+npm i github:lucaskellyc/totem
 ```
 
 ```js
 import * as THREE from "three";
-import { Stack } from "totem";
+import { Totem } from "totem";
 
 const scene = new THREE.Scene();
-const stack = new Stack();
-scene.add(stack);
+const totem = new Totem();
+scene.add(totem);
 
-await stack.loadBlocks([
+await totem.loadBlocks([
   {
     url: "/models/block_a.glb",
     texture: "/textures/block_a.jpg",
@@ -32,10 +32,10 @@ await stack.loadBlocks([
 ]);
 
 // in your render loop:
-stack.update();
+totem.update();
 
 // hook up scrolling:
-window.addEventListener("wheel", (e) => stack.scroll(e.deltaY / 500));
+window.addEventListener("wheel", (e) => totem.scroll(e.deltaY / 500));
 ```
 
 ## Block spec
@@ -73,7 +73,7 @@ window.addEventListener("wheel", (e) => stack.scroll(e.deltaY / 500));
 }
 ```
 
-Lights fade with distance from `stack.lightFocusY` (default `-5`), controlled by `stack.lightFalloff`. The same idea applies to unlit meshes via `stack.unlitFocusY` / `stack.unlitFalloff`.
+Lights fade with distance from `totem.lightFocusY` (default `-5`), controlled by `totem.lightFalloff`. The same idea applies to unlit meshes via `totem.unlitFocusY` / `totem.unlitFalloff`.
 
 ## Demo
 
@@ -85,12 +85,6 @@ python3 -m http.server 8000
 ```
 
 Three.js is loaded from [esm.sh](https://esm.sh) via an importmap, so there's nothing to install.
-
-## Deploying the demo to GitHub Pages
-
-1. Push this repo to GitHub.
-2. Settings → Pages → Source: **Deploy from a branch**, Branch: **main**, folder: **/ (root)**.
-3. Visit `https://<user>.github.io/<repo>/`.
 
 ## License
 

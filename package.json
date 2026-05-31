@@ -5,9 +5,9 @@
   "author": "Lucas Kelly",
   "license": "MIT",
   "type": "module",
-  "main": "./lib/stack.js",
+  "main": "./lib/totem.js",
   "exports": {
-    ".": "./lib/stack.js"
+    ".": "./lib/totem.js"
   },
   "files": [
     "lib"
