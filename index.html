@@ -29,9 +29,16 @@
             }
             canvas {
                 position: fixed;
-                inset: 0;
-                width: 100vw;
-                height: 100lvh;
+                top: calc(-1 * env(safe-area-inset-top, 0px));
+                left: calc(-1 * env(safe-area-inset-left, 0px));
+                width: calc(
+                    100vw + env(safe-area-inset-left, 0px) +
+                        env(safe-area-inset-right, 0px)
+                );
+                height: calc(
+                    100vh + env(safe-area-inset-top, 0px) +
+                        env(safe-area-inset-bottom, 0px)
+                );
                 user-select: none;
                 -webkit-user-select: none;
                 -webkit-touch-callout: none;
@@ -58,18 +65,19 @@
                 position: fixed;
                 top: 16px;
                 right: 16px;
-                height: 42px;
-                width: 42px;
                 border-radius: 999px;
                 background: transparent;
+                color: #cfd2d6;
                 display: flex;
                 justify-content: center;
                 align-items: center;
                 text-decoration: none;
                 font: inherit;
+                font-size: 16px;
                 line-height: 1;
                 z-index: 1;
                 opacity: 0;
+                padding: 8px 12px;
                 pointer-events: none;
                 transition:
                     background 0.18s ease,
@@ -86,10 +94,6 @@
             }
             #repo-link:active {
                 background: rgba(255, 255, 255, 0.12);
-            }
-            #repo-link svg {
-                height: 24px;
-                width: 24px;
             }
             #loading {
                 position: fixed;
@@ -173,7 +177,8 @@
                 "imports": {
                     "three": "https://esm.sh/three@0.184.0",
                     "three/addons/": "https://esm.sh/three@0.184.0/examples/jsm/",
-                    "lottie-web": "https://esm.sh/lottie-web@5.12.2"
+                    "lottie-web": "https://esm.sh/lottie-web@5.12.2",
+                    "lucide": "https://esm.sh/lucide@0.460.0"
                 }
             }
         </script>
@@ -182,10 +187,10 @@
         <div id="loading">
             <div id="loading-lottie"></div>
             <div id="loading-bar"><div id="loading-bar-fill"></div></div>
-            <!--<div>Please hold...</div>-->
         </div>
         <script type="module">
             import lottie from "lottie-web";
+            import { createElement, ArrowUpRight } from "lucide";
             lottie.loadAnimation({
                 container: document.getElementById("loading-lottie"),
                 renderer: "svg",
@@ -193,8 +198,11 @@
                 autoplay: true,
                 path: "./assets/logo.json",
             });
+            document.getElementById("repo-link").innerHTML = "Github";
+            document
+                .getElementById("repo-link")
+                .appendChild(createElement(ArrowUpRight));
         </script>
-        <!--<div id="hint">scroll to navigate</div>-->
         <a
             id="repo-link"
             href="https://github.com/lucaskellyc/totem"
@@ -202,23 +210,6 @@
             rel="noopener"
             aria-label="View source on GitHub"
         >
-            <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="white"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                aria-hidden="true"
-            >
-                <line x1="6" x2="6" y1="3" y2="15" />
-                <circle cx="18" cy="6" r="3" />
-                <circle cx="6" cy="18" r="3" />
-                <path d="M18 9a9 9 0 0 1-9 9" />
-            </svg>
         </a>
         <script type="module" src="./demo.js"></script>
     </body>

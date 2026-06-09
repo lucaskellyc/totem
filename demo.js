@@ -4,8 +4,8 @@ import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
-import { Totem } from "./lib/totem.js";
-import { attachInteract } from "./lib/interact.js";
+import { Totem } from "./lib/extras.js";
+import { attachGestures } from "./lib/gestures.js";
 import { blocks } from "./blocks.js";
 
 const scene = new THREE.Scene();
@@ -104,7 +104,7 @@ const vignetteBlurPass = new ShaderPass({
     tDiffuse: { value: null },
     uInner: { value: 0.3 },
     uOuter: { value: 1.0 },
-    uRadius: { value: 0.03 },
+    uRadius: { value: 0.015 },
     uAspect: {
       value: canvasEl.clientWidth / canvasEl.clientHeight,
     },
@@ -185,11 +185,11 @@ loadingManager.onProgress = (_url, loaded, total) => {
 };
 document.getElementById("loading-bar")?.classList.add("visible");
 
-const totem = new Totem({ loadingManager });
-scene.add(totem);
+const stack = new Totem({ loadingManager });
+scene.add(stack);
 
 await new Promise((resolve) => setTimeout(resolve, 1500));
-await totem.loadBlocks(blocks);
+await stack.loadBlocks(blocks);
 if (loadingFill) {
   loadingFill.style.width = "100%";
 }
@@ -203,7 +203,7 @@ setTimeout(() => {
   intro.startTime = performance.now();
 }, 2500);
 
-const interact = attachInteract(renderer.domElement, totem, {
+const gestures = attachGestures(renderer.domElement, stack, {
   autoScroll: 0.02,
   autoScrollResumeDelay: 1000,
 });
@@ -226,8 +226,8 @@ window.addEventListener("resize", () => {
 
 function animate() {
   requestAnimationFrame(animate);
-  interact.update();
-  totem.update();
+  gestures.update();
+  stack.update();
   const introT = intro.started
     ? Math.min((performance.now() - intro.startTime) / intro.duration, 1)
     : 0;

@@ -106,10 +106,9 @@ export const blocks = [
     receiveShadow: true,
     lights: [
       {
-        position: [-1, -2, 2],
-        color: 0xcc4f51,
+        position: [-1, -2.5, 2],
+        color: 0x333333,
         castShadow: true,
-        behavior: { type: "pulse", rate: 0.4, min: 0.2, max: 0.5 },
       },
       {
         position: [1, -0.8, 3],
