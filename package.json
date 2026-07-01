@@ -1,18 +1,25 @@
 {
   "name": "totem",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Infinite vertical scroll primitive for three.js",
   "author": "Lucas Kelly",
   "license": "MIT",
   "type": "module",
-  "main": "./lib/totem.js",
+  "main": "./lib/totem/totem.js",
   "exports": {
-    ".": "./lib/totem.js"
+    ".": "./lib/totem/totem.js",
+    "./extras/*": "./lib/extras/*"
   },
   "files": [
     "lib"
   ],
   "peerDependencies": {
     "three": "^0.184.0"
+  },
+  "devDependencies": {
+    "lottie-web": "^5.13.0",
+    "lucide": "^1.20.0",
+    "three": "^0.184.0",
+    "vite": "^8.0.16"
   }
 }

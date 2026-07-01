@@ -1,3 +1,5 @@
+import * as THREE from "three";
+
 export const blocks = [
   {
     url: "./assets/block_stylish.glb",
@@ -13,13 +15,10 @@ export const blocks = [
       {
         position: [-1, -2.5, 2],
         color: 0x555555,
-        castShadow: true,
       },
       {
         position: [0, -2.5, 0],
         color: 0x555555,
-        castShadow: true,
-        behavior: { type: "pulse", rate: 0.4, min: 0.5, max: 1.0 },
       },
     ],
     components: [
@@ -30,16 +29,40 @@ export const blocks = [
         position: [0, -3.2, 0],
       },
       {
-        shape: "plane",
-        size: [2, 3],
-        position: [0, -2.5, -0.5],
-        type: "unlit",
-        video: { url: "./assets/godrays.mp4" },
-        castShadow: false,
-        receiveShadow: false,
+        object: () => {
+          const geo = new THREE.PlaneGeometry(2.2, 3);
+          const mat = new THREE.MeshBasicMaterial({
+            transparent: true,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false,
+            side: THREE.DoubleSide,
+          });
+          return new THREE.Mesh(geo, mat);
+        },
+        video: "./assets/godrays.mp4",
+        position: [0, -2, -0.7],
       },
     ],
   },
+  // {
+  //   url: "./assets/block_office.glb",
+  //   texture: "./assets/block_office_color.jpg",
+  //   normalMap: "./assets/block_office_norm.jpg",
+  //   roughness: 0.8,
+  //   receiveShadow: true,
+  //   lights: [
+  //     {
+  //       position: [1, -1.5, 2],
+  //       color: 0xe2cfb4,
+  //       castShadow: true,
+  //     },
+  //     {
+  //       position: [-1, -2.5, 2],
+  //       color: 0x555555,
+  //     },
+  //   ],
+  //   components: [],
+  // },
   {
     url: "./assets/block_fountain.glb",
     texture: "./assets/block_fountain_color.jpg",
@@ -55,7 +78,6 @@ export const blocks = [
       {
         position: [-1, -2.5, 2],
         color: 0x555555,
-        castShadow: true,
       },
     ],
     components: [
@@ -84,17 +106,17 @@ export const blocks = [
       },
       {
         url: "./assets/component_fountain_d.glb",
-        castShadow: true,
         type: "water",
-        color: 0x325587,
-        opacity: 0.7,
-        roughness: 0,
-        flowDir: [0, 1],
-        flowSpeed: 0.1,
-        flowScale: 0.5,
-        ridgeStrength: 1.5,
-        displacement: 0.05,
-        contrast: 2,
+        castShadow: true,
+        sound: {
+          url: "./assets/fountain.wav",
+          volume: 25,
+          refDistance: 0.1,
+          rolloff: 5,
+          distanceModel: "inverse",
+          maxDistance: 5,
+          fade: 8,
+        },
         position: [0, -2.65, 0.62],
       },
     ],
@@ -108,7 +130,6 @@ export const blocks = [
       {
         position: [-1, -2.5, 2],
         color: 0x333333,
-        castShadow: true,
       },
       {
         position: [1, -0.8, 3],
@@ -165,8 +186,8 @@ export const blocks = [
     components: [
       {
         url: "./assets/component_tv_a.glb",
-        video: { url: "./assets/tv_1.mp4" },
         type: "unlit",
+        video: "./assets/tv_1.mp4",
         castShadow: false,
         position: [0, -2.85, 0.05],
       },
