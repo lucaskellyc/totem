@@ -15,6 +15,17 @@ const COLUMN_COUNT = 3;
 // the center column shown full-width.
 const MIN_COLUMN_WIDTH = 220;
 
+// Keep a constant horizontal field of view across column widths so a column's
+// content isn't cropped left/right when it's narrow — narrower columns reveal
+// more vertically instead of clipping the block's sides. FRAME_WIDTH is the
+// world-space width kept visible at the block plane, FOCUS_DISTANCE the camera→
+// plane distance (camera sits at z = FOCUS_DISTANCE looking down -z).
+const FRAME_WIDTH = 3.8;
+const FOCUS_DISTANCE = 5;
+const H_HALF_TAN = FRAME_WIDTH / 2 / FOCUS_DISTANCE;
+const fovForAspect = (aspect) =>
+  THREE.MathUtils.radToDeg(2 * Math.atan(H_HALF_TAN / aspect));
+
 const loadingFill = document.getElementById("loading-bar-fill");
 document.getElementById("loading-bar")?.classList.add("visible");
 
@@ -103,10 +114,12 @@ const layoutColumns = () => {
 
   // Too narrow to tile: show only the center column, full-width.
   if (w / columns.length < MIN_COLUMN_WIDTH) {
+    const aspect = w / h;
     columns.forEach((col, i) => {
       col.visible = i === centerColumn;
       col.rect = { x: 0, y: 0, w, h };
-      col.camera.aspect = w / h;
+      col.camera.aspect = aspect;
+      col.camera.fov = fovForAspect(aspect);
       col.camera.updateProjectionMatrix();
     });
     return;
@@ -115,9 +128,11 @@ const layoutColumns = () => {
   let x = 0;
   columns.forEach((col, i) => {
     const cw = i === columns.length - 1 ? w - x : Math.round(w / columns.length);
+    const aspect = cw / h;
     col.visible = true;
     col.rect = { x, y: 0, w: cw, h };
-    col.camera.aspect = cw / h;
+    col.camera.aspect = aspect;
+    col.camera.fov = fovForAspect(aspect);
     col.camera.updateProjectionMatrix();
     x += cw;
   });
