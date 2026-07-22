@@ -57,6 +57,8 @@ const hitColumn = (col, event) => {
   return x >= col.rect.x && x < col.rect.x + col.rect.w;
 };
 
+const centerColumn = Math.floor((COLUMN_COUNT - 1) / 2);
+
 const columns = Array.from({ length: COLUMN_COUNT }, (_, i) => {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
@@ -92,7 +94,8 @@ const columns = Array.from({ length: COLUMN_COUNT }, (_, i) => {
     gestures: null,
   };
   col.gestures = attachGestures(canvas, totem, {
-    autoScroll: 0.02,
+    // Center column drifts the opposite way from its neighbours.
+    autoScroll: i === centerColumn ? -0.02 : 0.02,
     autoScrollResumeDelay: 1000,
     hitTest: (event) => hitColumn(col, event),
   });
@@ -104,8 +107,6 @@ const filters = new Filters(renderer, new ColumnsRenderPass(columns), {
   fisheye: { strength: 0.25 },
   edgeBlur: { start: 0.55, strength: 8 },
 });
-
-const centerColumn = Math.floor((COLUMN_COUNT - 1) / 2);
 
 const layoutColumns = () => {
   const w = container.clientWidth;
