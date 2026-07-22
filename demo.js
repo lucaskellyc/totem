@@ -11,6 +11,9 @@ import { columnBlocks } from "./blocks.js";
 THREE.Cache.enabled = true;
 
 const COLUMN_COUNT = 3;
+// Below this per-column width the columns get too thin, so we collapse to just
+// the center column shown full-width.
+const MIN_COLUMN_WIDTH = 220;
 
 const loadingFill = document.getElementById("loading-bar-fill");
 document.getElementById("loading-bar")?.classList.add("visible");
@@ -37,6 +40,7 @@ let totalWidth = container.clientWidth;
 // Map a pointer/wheel event to a logical X in [0, totalWidth] so hit-testing
 // lines up with the column rects even with safe-area overscan on the canvas.
 const hitColumn = (col, event) => {
+  if (!col.visible) return false;
   const bounds = canvas.getBoundingClientRect();
   const x = ((event.clientX - bounds.left) / bounds.width) * totalWidth;
   return x >= col.rect.x && x < col.rect.x + col.rect.w;
@@ -73,6 +77,7 @@ const columns = Array.from({ length: COLUMN_COUNT }, (_, i) => {
     water,
     blocks: columnBlocks(i),
     rect: { x: 0, y: 0, w: 1, h: 1 },
+    visible: true,
     gestures: null,
   };
   col.gestures = attachGestures(canvas, totem, {
@@ -89,13 +94,28 @@ const filters = new Filters(renderer, new ColumnsRenderPass(columns), {
   edgeBlur: { start: 0.55, strength: 8 },
 });
 
+const centerColumn = Math.floor((COLUMN_COUNT - 1) / 2);
+
 const layoutColumns = () => {
   const w = container.clientWidth;
   const h = container.clientHeight;
   totalWidth = w;
+
+  // Too narrow to tile: show only the center column, full-width.
+  if (w / columns.length < MIN_COLUMN_WIDTH) {
+    columns.forEach((col, i) => {
+      col.visible = i === centerColumn;
+      col.rect = { x: 0, y: 0, w, h };
+      col.camera.aspect = w / h;
+      col.camera.updateProjectionMatrix();
+    });
+    return;
+  }
+
   let x = 0;
   columns.forEach((col, i) => {
     const cw = i === columns.length - 1 ? w - x : Math.round(w / columns.length);
+    col.visible = true;
     col.rect = { x, y: 0, w: cw, h };
     col.camera.aspect = cw / h;
     col.camera.updateProjectionMatrix();
