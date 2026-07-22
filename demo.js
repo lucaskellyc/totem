@@ -3,24 +3,19 @@ import { Totem } from "./lib/totem/totem.js";
 import { attachGestures } from "./lib/totem/gestures.js";
 import { VideoEffect } from "./lib/extras/video.js";
 import { WaterEffect } from "./lib/extras/water.js";
-import { SoundEffect } from "./lib/extras/sound.js";
 import { Filters } from "./lib/extras/filters.js";
-import { blocks } from "./blocks.js";
+import { ColumnsRenderPass } from "./lib/extras/columnsPass.js";
+import { columnBlocks } from "./blocks.js";
+
+// Share the cache so blocks reused across columns download once.
+THREE.Cache.enabled = true;
+
+const COLUMN_COUNT = 3;
 
 const loadingFill = document.getElementById("loading-bar-fill");
 document.getElementById("loading-bar")?.classList.add("visible");
 
 const container = document.body;
-
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(
-  60,
-  container.clientWidth / container.clientHeight,
-  0.1,
-  100,
-);
-camera.position.set(0, -5.5, 4);
-camera.lookAt(0, -5.5, 0);
 
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 const canvas = renderer.domElement;
@@ -36,58 +31,99 @@ loadingManager.onProgress = (_url, loaded, total) => {
   if (loadingFill) loadingFill.style.width = `${(loaded / total) * 100}%`;
 };
 
-const video = new VideoEffect();
-const water = new WaterEffect();
-const sound = new SoundEffect();
-camera.add(sound.listener);
-const totem = new Totem({ loadingManager });
-totem._decorateBlock = ({ spec, group, root, components, componentRoots }) => {
-  video.applyTo(root, spec, group);
-  water.applyTo(root, spec);
-  sound.applyTo(root, spec, group);
-  componentRoots.forEach((compRoot, i) => {
-    video.applyTo(compRoot, components[i], group);
-    water.applyTo(compRoot, components[i]);
-    sound.applyTo(compRoot, components[i], group);
-  });
-};
-totem._updateExtras = (t) => {
-  video.update();
-  water.update(t);
-  sound.update();
-};
-scene.add(totem);
+// Logical (renderer) width the column rects tile across.
+let totalWidth = container.clientWidth;
 
-const gestures = attachGestures(canvas, totem, {
-  autoScroll: 0.02,
-  autoScrollResumeDelay: 1000,
+// Map a pointer/wheel event to a logical X in [0, totalWidth] so hit-testing
+// lines up with the column rects even with safe-area overscan on the canvas.
+const hitColumn = (col, event) => {
+  const bounds = canvas.getBoundingClientRect();
+  const x = ((event.clientX - bounds.left) / bounds.width) * totalWidth;
+  return x >= col.rect.x && x < col.rect.x + col.rect.w;
+};
+
+const columns = Array.from({ length: COLUMN_COUNT }, (_, i) => {
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
+  camera.position.set(0, -5.5, 5);
+  camera.lookAt(0, -5.5, 0);
+
+  const video = new VideoEffect();
+  const water = new WaterEffect();
+  const totem = new Totem({ loadingManager });
+  totem._decorateBlock = ({ spec, root, components, componentRoots, group }) => {
+    video.applyTo(root, spec, group);
+    water.applyTo(root, spec);
+    componentRoots.forEach((compRoot, ci) => {
+      video.applyTo(compRoot, components[ci], group);
+      water.applyTo(compRoot, components[ci]);
+    });
+  };
+  totem._updateExtras = (t) => {
+    video.update();
+    water.update(t);
+  };
+  scene.add(totem);
+
+  const col = {
+    scene,
+    camera,
+    totem,
+    video,
+    water,
+    blocks: columnBlocks(i),
+    rect: { x: 0, y: 0, w: 1, h: 1 },
+    gestures: null,
+  };
+  col.gestures = attachGestures(canvas, totem, {
+    autoScroll: 0.02,
+    autoScrollResumeDelay: 1000,
+    hitTest: (event) => hitColumn(col, event),
+  });
+  return col;
 });
 
-const filters = new Filters(renderer, scene, camera, {
+const filters = new Filters(renderer, new ColumnsRenderPass(columns), {
   bloom: { strength: 0.4, radius: 0.2, threshold: 0.96 },
   fisheye: { strength: 0.25 },
   edgeBlur: { start: 0.55, strength: 8 },
 });
 
-window.addEventListener("resize", () => {
+const layoutColumns = () => {
   const w = container.clientWidth;
   const h = container.clientHeight;
-  camera.aspect = w / h;
-  camera.updateProjectionMatrix();
-  renderer.setSize(w, h, false);
-  filters.setSize(w, h);
-});
+  totalWidth = w;
+  let x = 0;
+  columns.forEach((col, i) => {
+    const cw = i === columns.length - 1 ? w - x : Math.round(w / columns.length);
+    col.rect = { x, y: 0, w: cw, h };
+    col.camera.aspect = cw / h;
+    col.camera.updateProjectionMatrix();
+    x += cw;
+  });
+};
+layoutColumns();
+
+const onResize = () => {
+  renderer.setSize(container.clientWidth, container.clientHeight, false);
+  filters.setSize(container.clientWidth, container.clientHeight);
+  layoutColumns();
+};
+window.addEventListener("resize", onResize);
+window.visualViewport?.addEventListener("resize", onResize);
 
 function animate() {
   requestAnimationFrame(animate);
-  gestures.update();
-  totem.update();
+  for (const col of columns) {
+    col.gestures.update();
+    col.totem.update();
+  }
   filters.render();
 }
 animate();
 
 await new Promise((resolve) => setTimeout(resolve, 1500));
-await totem.loadBlocks(blocks);
+await Promise.all(columns.map((col) => col.totem.loadBlocks(col.blocks)));
 
 if (loadingFill) loadingFill.style.width = "100%";
 setTimeout(() => loadingFill?.classList.add("complete"), 1000);

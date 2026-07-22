@@ -17,7 +17,7 @@
             html,
             body {
                 margin: 0;
-                height: 100%;
+                height: 100dvh;
                 background: black;
                 color: #cfd2d6;
                 overflow: hidden;
@@ -36,7 +36,7 @@
                         env(safe-area-inset-right, 0px)
                 );
                 height: calc(
-                    100vh + env(safe-area-inset-top, 0px) +
+                    100dvh + env(safe-area-inset-top, 0px) +
                         env(safe-area-inset-bottom, 0px)
                 );
                 user-select: none;
@@ -53,6 +53,31 @@
             }
             canvas:active {
                 cursor: grabbing;
+            }
+            #feather-top,
+            #feather-bottom {
+                position: fixed;
+                left: 0;
+                right: 0;
+                height: 120px;
+                pointer-events: none;
+                z-index: 1;
+            }
+            #feather-top {
+                top: 0;
+                background: linear-gradient(
+                    to bottom,
+                    black 0%,
+                    rgba(0, 0, 0, 0) 100%
+                );
+            }
+            #feather-bottom {
+                bottom: 0;
+                background: linear-gradient(
+                    to top,
+                    black 0%,
+                    rgba(0, 0, 0, 0) 100%
+                );
             }
             #hint {
                 position: fixed;
@@ -184,6 +209,8 @@
         </script>
     </head>
     <body>
+        <div id="feather-top"></div>
+        <div id="feather-bottom"></div>
         <div id="loading">
             <div id="loading-lottie"></div>
             <div id="loading-bar"><div id="loading-bar-fill"></div></div>
