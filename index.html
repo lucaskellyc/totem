@@ -172,8 +172,9 @@
                 width: 0%;
                 height: 100%;
                 background: #cfd2d6;
+                /* Width is eased per-frame in JS; keep it out of the CSS
+                   transition so the two don't fight. */
                 transition:
-                    width 0.18s ease,
                     background 0.5s ease,
                     opacity 0.5s ease;
             }

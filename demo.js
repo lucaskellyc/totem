@@ -41,9 +41,24 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
 
 const loadingManager = new THREE.LoadingManager();
+
+// The bar's real progress arrives in discrete jumps as each asset finishes. To
+// keep the fill gliding instead of snapping, we treat that as a *target* and
+// ease the shown width toward it every frame.
+let targetProgress = 0;
+let shownProgress = 0;
 loadingManager.onProgress = (_url, loaded, total) => {
-  if (loadingFill) loadingFill.style.width = `${(loaded / total) * 100}%`;
+  targetProgress = loaded / total;
 };
+
+const animateLoadingBar = () => {
+  // Smaller factor = smoother, slower catch-up.
+  shownProgress += (targetProgress - shownProgress) * 0.06;
+  if (targetProgress >= 1 && shownProgress > 0.999) shownProgress = 1;
+  if (loadingFill) loadingFill.style.width = `${shownProgress * 100}%`;
+  if (shownProgress < 1) requestAnimationFrame(animateLoadingBar);
+};
+requestAnimationFrame(animateLoadingBar);
 
 // Logical (renderer) width the column rects tile across.
 let totalWidth = container.clientWidth;
@@ -161,7 +176,8 @@ animate();
 await new Promise((resolve) => setTimeout(resolve, 1500));
 await Promise.all(columns.map((col) => col.totem.loadBlocks(col.blocks)));
 
-if (loadingFill) loadingFill.style.width = "100%";
+// Let the eased loop glide the fill up to 100% rather than snapping it.
+targetProgress = 1;
 setTimeout(() => loadingFill?.classList.add("complete"), 1000);
 setTimeout(() => {
   document.getElementById("loading")?.classList.add("done");
