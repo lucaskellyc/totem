@@ -3,8 +3,7 @@ import * as THREE from "three";
 const CDN = "https://cdn.jsdelivr.net/gh/lucaskellyc/totem@stable/assets";
 const asset = (name) => `${CDN}/${name}`;
 
-export const blocks = [
-  {
+export const stylish = {
     url: asset("block_stylish.glb"),
     normalMap: asset("block_stylish_norm.jpg"),
     roughness: 0.4,
@@ -46,8 +45,9 @@ export const blocks = [
         position: [0, -2, -0.7],
       },
     ],
-  },
-  {
+};
+
+export const fountain = {
     url: asset("block_fountain.glb"),
     texture: asset("block_fountain_color.jpg"),
     normalMap: asset("block_fountain_norm.jpg"),
@@ -95,8 +95,9 @@ export const blocks = [
         position: [0, -2.65, 0.62],
       },
     ],
-  },
-  {
+};
+
+export const vault = {
     url: asset("block_vault.glb"),
     texture: asset("block_vault_color.jpg"),
     normalMap: asset("block_vault_norm.jpg"),
@@ -146,8 +147,9 @@ export const blocks = [
         position: [0, -1.8, 0.5],
       },
     ],
-  },
-  {
+};
+
+export const tv = {
     url: asset("block_tv.glb"),
     texture: asset("tv_color_a.jpg"),
     receiveShadow: true,
@@ -167,11 +169,22 @@ export const blocks = [
         position: [0, -2.85, 0.05],
       },
     ],
-  },
+};
+
+// Every block, used as the fallback rotation for columns without a custom set.
+export const blocks = [stylish, fountain, vault, tv];
+
+// Per-column block lists. Edit an entry to give that column a unique set of
+// blocks (add, remove, or reorder). Reusing the same spec object across columns
+// is fine — THREE.Cache dedupes downloads while each column parses its own fresh
+// scene-graph instances. Columns without an entry fall back to a rotation of
+// `blocks` so adjacent columns start on different blocks.
+export const columns = [
+  [stylish, fountain, vault, tv],
+  [fountain, vault, tv, stylish],
+  [vault, tv, stylish, fountain],
 ];
 
-// Rotate the shared block list so adjacent columns start on different blocks.
-// Same specs → THREE.Cache dedupes downloads while each column parses its own
-// fresh scene-graph instances.
 export const columnBlocks = (index) =>
+  columns[index] ??
   blocks.slice(index % blocks.length).concat(blocks.slice(0, index % blocks.length));
