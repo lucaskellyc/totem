@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="36" role="img" aria-label="Demo">
+  <rect width="120" height="36" rx="18" fill="#000"/>
+  <text x="36" y="23" fill="#ffffff" text-anchor="start"
+        font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif"
+        font-size="14" font-weight="600">Demo</text>
+  <!-- Lucide "chevron-right" (24x24), scaled into the pill and stroked white -->
+  <g transform="translate(76 10) scale(0.6667)" fill="none" stroke="#ffffff"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="m9 18 6-6-6-6" stroke-width="3" vector-effect="non-scaling-stroke"/>
+  </g>
+</svg>

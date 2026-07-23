@@ -1,8 +1,9 @@
-# totem
+![Totem](assets/totem_logo.svg)
 
-Infinite vertical scroll primitive for [three.js](https://threejs.org/). Stack 3D blocks into a totem, scroll the wheel, and they loop forever.
+<p>
+  <a href="https://lucaskellyc.github.io/totem/"><img src="assets/btn_demo.svg" alt="Demo" height="36"></a>
 
-**[Live demo →](https://lucaskellyc.github.io/totem/)**
+</p>
 
 ## Use it in your own project
 
@@ -60,7 +61,7 @@ window.addEventListener("wheel", (e) => totem.scroll(e.deltaY / 500));
 | `lights`        | array             | see [Lights](#lights)                                             |
 | `components`    | array             | child specs (same shape as a block spec, plus `position`/`rotation`) |
 
-Components inherit every block-spec field, so any effect (`video`, `sound`, `type: "water"`, …) works at either level.
+Components inherit every block-spec field, so any effect (`video`, `sound`, `blink`, `type: "water"`, …) works at either level.
 
 ### Lights
 
@@ -88,6 +89,24 @@ Set `type: "water"` on a spec. `WaterEffect` swaps in a shader-modified `MeshSta
 
 Set `video: "./thing.mp4"` (or an object with `loop`, `muted`, `playbackRate`, `autoplay`, …). Pair with `type: "unlit"` to swap the mesh to a `MeshBasicMaterial({ map: videoTexture })`, or omit `type` to just assign `.map` on your existing material (useful for additive/transparent overlays). Playback pauses when the block scrolls out of focus range or the tab is hidden.
 
+### Bulb — `lib/extras/bulb.js`
+
+Blinking, light-casting bulbs. Set `blink` on a `standard` spec that also has `emissive` / `emissiveIntensity`. `BulbEffect` hard-toggles the material's `emissiveIntensity` on/off each frame (pairs well with `bloom`) and drives a matching `THREE.PointLight` so the bulb also casts light on nearby meshes, in sync with its glow. Construct with `new BulbEffect({ hz })` — full on/off cycles per second — and call `bulb.update(t)` in your render loop.
+
+```js
+{
+  type: "standard",
+  emissive: 0xffee88,
+  emissiveIntensity: 1.2,
+  blink: {
+    phase: 0,          // 0–1 cycle offset; pair bulbs at 0 and 0.5 to alternate
+    power: 8,          // cast-light intensity while on
+    distance: 3.5,     // light falloff radius
+    offset: [0, 0, 0], // optional nudge of the light off the component origin
+  },
+}
+```
+
 ### Sound — `lib/extras/sound.js`
 
 Spatially anchored looping audio via `THREE.PositionalAudio`. Attach the effect's listener to your camera (`camera.add(sound.listener)`), then set `sound` on a spec:
@@ -114,10 +133,13 @@ Post-processing wrapper around `EffectComposer`:
 
 ```js
 import { Filters } from "totem/lib/extras/filters.js";
-const filters = new Filters(renderer, scene, camera, {
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+
+const filters = new Filters(renderer, new RenderPass(scene, camera), {
   bloom:    { strength: 0.5, radius: 0.4, threshold: 0.85 },
   fisheye:  { strength: 0.25, zoom: 1.0 },
   edgeBlur: { start: 0.55, strength: 8, power: 2.0 },
+  output:   true, // trailing OutputPass (default); set false to skip
 });
 
 // replace renderer.render(scene, camera):
@@ -125,6 +147,8 @@ filters.render();
 // and on resize:
 filters.setSize(w, h);
 ```
+
+The second argument is the composer's first pass — any three.js pass. A single scene just needs `RenderPass`; the demo passes a custom `ColumnsRenderPass` (`lib/extras/columnsPass.js`) to render several columns into one frame. Enabled passes run in the order listed above.
 
 ## Demo
 

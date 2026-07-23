@@ -3,6 +3,7 @@ import { Totem } from "./lib/totem/totem.js";
 import { attachGestures } from "./lib/totem/gestures.js";
 import { VideoEffect } from "./lib/extras/video.js";
 import { WaterEffect } from "./lib/extras/water.js";
+import { BulbEffect } from "./lib/extras/bulb.js";
 import { Filters } from "./lib/extras/filters.js";
 import { ColumnsRenderPass } from "./lib/extras/columnsPass.js";
 import { columnBlocks } from "./blocks.js";
@@ -14,6 +15,14 @@ const COLUMN_COUNT = 3;
 // Below this per-column width the columns get too thin, so we collapse to just
 // the center column shown full-width.
 const MIN_COLUMN_WIDTH = 220;
+// Master switch for the collapsed-mode horizontal paging interaction (drag +
+// trackpad swipe to flip columns, slide/dim/snap, and browser back/forward
+// suppression). Set false to disable it all and restore default behaviour.
+const COLUMN_PAGING = true;
+// Sub-switch (only applies when COLUMN_PAGING is on): trackpad two-finger swipe
+// paging. Set false to keep click-and-drag paging but hand horizontal wheels —
+// and browser back/forward nav — back to the browser.
+const TRACKPAD_PAGING = false;
 
 // Keep a constant horizontal field of view across column widths so a column's
 // content isn't cropped left/right when it's narrow — narrower columns reveal
@@ -31,7 +40,10 @@ document.getElementById("loading-bar")?.classList.add("visible");
 
 const container = document.body;
 
-const renderer = new THREE.WebGLRenderer({ antialias: true });
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  powerPreference: "high-performance",
+});
 const canvas = renderer.domElement;
 container.appendChild(canvas);
 renderer.setSize(container.clientWidth, container.clientHeight, false);
@@ -74,6 +86,17 @@ const hitColumn = (col, event) => {
 
 const centerColumn = Math.floor((COLUMN_COUNT - 1) / 2);
 
+// In collapsed (single-column) mode this is the column shown full-width; a
+// horizontal swipe cycles it. `collapsed` is set by layoutColumns per viewport.
+let activeColumn = centerColumn;
+let collapsed = false;
+// Horizontal paging (collapsed mode): `dragX` is the live px offset of the
+// active column (0 = settled) as the finger tracks; the incoming neighbour is
+// drawn beside it. `snapTarget` drives the release animation (null while idle
+// or finger-down).
+let dragX = 0;
+let snapTarget = null;
+
 const columns = Array.from({ length: COLUMN_COUNT }, (_, i) => {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
@@ -82,18 +105,22 @@ const columns = Array.from({ length: COLUMN_COUNT }, (_, i) => {
 
   const video = new VideoEffect();
   const water = new WaterEffect();
+  const bulb = new BulbEffect({ hz: 1.5 });
   const totem = new Totem({ loadingManager });
   totem._decorateBlock = ({ spec, root, components, componentRoots, group }) => {
     video.applyTo(root, spec, group);
     water.applyTo(root, spec);
+    bulb.applyTo(root, spec);
     componentRoots.forEach((compRoot, ci) => {
       video.applyTo(compRoot, components[ci], group);
       water.applyTo(compRoot, components[ci]);
+      bulb.applyTo(compRoot, components[ci]);
     });
   };
   totem._updateExtras = (t) => {
     video.update();
     water.update(t);
+    bulb.update(t);
   };
   scene.add(totem);
 
@@ -103,6 +130,7 @@ const columns = Array.from({ length: COLUMN_COUNT }, (_, i) => {
     totem,
     video,
     water,
+    bulb,
     blocks: columnBlocks(i),
     rect: { x: 0, y: 0, w: 1, h: 1 },
     visible: true,
@@ -113,6 +141,12 @@ const columns = Array.from({ length: COLUMN_COUNT }, (_, i) => {
     autoScroll: i === centerColumn ? -0.02 : 0.02,
     autoScrollResumeDelay: 1000,
     hitTest: (event) => hitColumn(col, event),
+    // Only the on-screen column hit-tests while collapsed; dragging it slides
+    // to the adjacent column, snapping on release.
+    swipeEnabled: () => COLUMN_PAGING && collapsed,
+    wheelSwipeEnabled: () => TRACKPAD_PAGING,
+    onSwipeMove: (dx) => dragColumns(dx),
+    onSwipeEnd: (dx, velocity) => releaseColumns(dx, velocity),
   });
   return col;
 });
@@ -127,19 +161,24 @@ const layoutColumns = () => {
   const w = container.clientWidth;
   const h = container.clientHeight;
   totalWidth = w;
+  collapsed = w / columns.length < MIN_COLUMN_WIDTH;
 
-  // Too narrow to tile: show only the center column, full-width.
-  if (w / columns.length < MIN_COLUMN_WIDTH) {
+  // Too narrow to tile: page a single full-width column. Give every column the
+  // full-width camera so any can slide into view, then position them by dragX.
+  if (collapsed) {
     const aspect = w / h;
-    columns.forEach((col, i) => {
-      col.visible = i === centerColumn;
-      col.rect = { x: 0, y: 0, w, h };
+    columns.forEach((col) => {
       col.camera.aspect = aspect;
       col.camera.fov = fovForAspect(aspect);
       col.camera.updateProjectionMatrix();
     });
+    applyCollapsedLayout();
     return;
   }
+
+  // Leaving collapsed mode: clear any in-progress paging.
+  dragX = 0;
+  snapTarget = null;
 
   let x = 0;
   columns.forEach((col, i) => {
@@ -147,12 +186,97 @@ const layoutColumns = () => {
     const aspect = cw / h;
     col.visible = true;
     col.rect = { x, y: 0, w: cw, h };
+    col.totem.brightness = 1;
     col.camera.aspect = aspect;
     col.camera.fov = fovForAspect(aspect);
     col.camera.updateProjectionMatrix();
     x += cw;
   });
 };
+
+// Brightness for a column whose band sits at offset x (0 = centred): full at
+// centre, easing down to COLLAPSED_DIM once a full column-width off-centre.
+const COLLAPSED_DIM = 0.25;
+const brightnessForOffset = (x, w) =>
+  COLLAPSED_DIM + (1 - COLLAPSED_DIM) * (1 - Math.min(1, Math.abs(x) / w));
+
+// Latched slide direction: +1 sliding toward the next column (dragX < 0), -1
+// toward the previous, 0 settled. Latching (rather than reading sign(dragX)
+// every frame) stops sub-pixel jitter around 0 — common with trackpad momentum,
+// which has no axis-lock slop — from flipping the neighbour and flashing the
+// wrong (wrap-around) column mid-slide.
+let slideDir = 0;
+const NEIGHBOUR_DEADZONE = 10; // px; within this we treat the slide as settled
+
+// Place the active column at dragX and, if mid-slide, its incoming neighbour
+// beside it (wrapping); hide the rest. ColumnsRenderPass reads these rects each
+// frame, so a negative/overhanging rect is just scissor-clipped at the edges.
+// Each placed column is dimmed by how far off-centre it has slid.
+const applyCollapsedLayout = () => {
+  const w = container.clientWidth;
+  const h = container.clientHeight;
+  const n = columns.length;
+  // Re-latch only after settling back near centre; otherwise hold the direction.
+  if (Math.abs(dragX) < NEIGHBOUR_DEADZONE) slideDir = 0;
+  else if (slideDir === 0) slideDir = dragX < 0 ? 1 : -1;
+  const neighbour =
+    slideDir > 0
+      ? (activeColumn + 1) % n
+      : slideDir < 0
+        ? (activeColumn - 1 + n) % n
+        : -1;
+  columns.forEach((col) => {
+    col.visible = false;
+  });
+  const place = (i, x) => {
+    columns[i].visible = true;
+    columns[i].rect = { x: Math.round(x), y: 0, w, h };
+    columns[i].totem.brightness = brightnessForOffset(x, w);
+  };
+  place(activeColumn, dragX);
+  if (neighbour !== -1) place(neighbour, slideDir > 0 ? dragX + w : dragX - w);
+};
+
+// Finger-tracking: offset the active column by the drag, clamped to one column.
+const dragColumns = (dx) => {
+  if (!collapsed) return;
+  const w = container.clientWidth;
+  dragX = Math.max(-w, Math.min(w, dx));
+  snapTarget = null;
+  applyCollapsedLayout();
+};
+
+// On release, snap to the neighbour if dragged far enough or flicked, else back.
+const releaseColumns = (_dx, velocity) => {
+  if (!collapsed) {
+    dragX = 0;
+    snapTarget = null;
+    return;
+  }
+  const w = container.clientWidth;
+  const farEnough = Math.abs(dragX) > w * 0.25;
+  const flicked =
+    Math.abs(velocity) > 0.35 && Math.sign(velocity) === Math.sign(dragX);
+  snapTarget = (farEnough || flicked) && dragX !== 0 ? Math.sign(dragX) * w : 0;
+};
+
+// Advance the release animation each frame; commit the column change on landing.
+const SNAP_EASE = 0.22;
+const updatePaging = () => {
+  if (!collapsed || snapTarget === null) return;
+  dragX += (snapTarget - dragX) * SNAP_EASE;
+  if (Math.abs(dragX - snapTarget) < 0.5) {
+    if (snapTarget !== 0) {
+      const n = columns.length;
+      activeColumn =
+        snapTarget < 0 ? (activeColumn + 1) % n : (activeColumn - 1 + n) % n;
+    }
+    dragX = 0;
+    snapTarget = null;
+  }
+  applyCollapsedLayout();
+};
+
 layoutColumns();
 
 const onResize = () => {
@@ -169,12 +293,20 @@ function animate() {
     col.gestures.update();
     col.totem.update();
   }
+  updatePaging();
   filters.render();
 }
 animate();
 
 await new Promise((resolve) => setTimeout(resolve, 1500));
 await Promise.all(columns.map((col) => col.totem.loadBlocks(col.blocks)));
+
+// Warm the GPU while the loading screen is still up: compile every column's
+// shaders (incl. shadow depth) and upload its textures, so blocks don't hitch
+// as they first render into view.
+await Promise.all(
+  columns.map((col) => renderer.compileAsync(col.scene, col.camera)),
+);
 
 // Let the eased loop glide the fill up to 100% rather than snapping it.
 targetProgress = 1;

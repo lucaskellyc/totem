@@ -1,7 +1,10 @@
 import * as THREE from "three";
 
 const CDN = "https://cdn.jsdelivr.net/gh/lucaskellyc/totem@stable/assets";
-const asset = (name) => `${CDN}/${name}`;
+// Dev serves new/untracked files straight from the local `assets/` folder via
+// Vite (VITE_ASSET_URL=/assets in .env.development); prod falls back to the CDN.
+const BASE = import.meta.env.VITE_ASSET_URL ?? CDN;
+const asset = (name) => `${BASE}/${name}`;
 
 // Reuse the tv model/lights while swapping the screen texture and playing video.
 // `texture` and `video` are asset names (passed through `asset()` here).
@@ -26,6 +29,57 @@ const makeTv = ({ texture, video }) => ({
       },
     ],
 });
+
+export const generic = {
+  url: asset("block_generic.glb"),
+  lights: [
+    {
+      position: [0, -1.5, 3],
+      color: 0xbbbbbb,
+    },
+  ],
+};
+
+export const fancy = {
+  url: asset("block_fancy.glb"),
+  texture: asset("block_fancy_color.jpg"),
+  normalMap: asset("block_fancy_norm.jpg"),
+  receiveShadow: true,
+  lights: [
+    {
+      position: [0, -1.5, 2],
+      color: 0xcccccc,
+    },
+  ],
+  components: [
+    {
+      url: asset("component_fancy_a.glb"),
+      castShadow: true,
+      texture: asset("fancy_color_a.jpg"),
+      normalMap: asset("fancy_norm_a.jpg"),
+      roughness: 0.4,
+      position: [0, -2.15, 0],
+    },
+    {
+      url: asset("component_fancy_b.glb"),
+      castShadow: true,
+      color: 0x222222,
+      alphaMap: asset("fancy_alpha_b.jpg"),
+      normalMap: asset("fancy_norm_b.jpg"),
+      roughnessMap: asset("fancy_rough_b.jpg"),
+      position: [0, -2.15, 0],
+    },
+    {
+      url: asset("component_fancy_c.glb"),
+      castShadow: true,
+      texture: asset("fancy_color_c.jpg"),
+      normalMap: asset("fancy_norm_c.jpg"),
+      roughness: 0.4,
+      position: [0, -2, 0.15],
+    },
+
+  ],
+};
 
 export const stylish = {
     url: asset("block_stylish.glb"),
@@ -173,15 +227,114 @@ export const vault = {
     ],
 };
 
+export const vent = {
+  url: asset("block_vent.glb"),
+  lights: [
+    {
+      position: [-1, -2, 2],
+      color: 0x555555,
+    },
+  ],
+  components: [
+    {
+      url: asset("component_vent_a.glb"),
+      castShadow: true,
+      metalness: 0.8,
+      roughness: 0.4,
+      normalMap: asset("vent_norm_a.jpg"),
+      texture: asset("vent_color_a.jpg"),
+      position: [0, -1.5, 0.3],
+    },
+    {
+      url: asset("component_vent_b.glb"),
+      castShadow: false,
+      metalness: 0.8,
+      roughness: 0.4,
+      position: [0, -1.5, 0.1],
+    },
+    {
+      url: asset("component_vent_c.glb"),
+      castShadow: false,
+      metalness: 0.8,
+      roughness: 0.4,
+      alphaMap: asset("vent_alpha_c.jpg"),
+      normalMap: asset("vent_norm_c.jpg"),
+      position: [0, -1.5, 0.4],
+    },
+  ],
+}
+
 export const sideshow = {
   url: asset("block_sideshow.glb"),
-  lights: [],
+  lights: [
+    {
+      position: [-1, -2.5, 2],
+      color: 0x333333,
+    }
+  ],
   components: [
     {
       url: asset("component_sideshow_a.glb"),
       type: "unlit",
-
     },
+    {
+      url: asset("component_sideshow_b1.glb"),
+      type: "standard",
+      color: 0x000000,
+      emissive: 0xffee88,
+      emissiveIntensity: 1,
+      blink: {
+        phase: 0,
+        offset: [0, 0, 1.5],
+        distance: 2,
+      },
+      position: [0, -3.2, -0.1],
+    },
+    {
+      url: asset("component_sideshow_b2.glb"),
+      type: "standard",
+      color: 0x000000,
+      emissive: 0xff5888,
+      emissiveIntensity: 2.5,
+      blink: {
+        phase: 0.5,
+        offset: [0, 0, 1.5],
+        distance: 2,
+      },
+      position: [0, -3.2, -0.1],
+    },
+  ],
+};
+
+export const dilapidated = {
+  url: asset("block_dilapidated.glb"),
+  texture: asset("block_dilapidated_color.jpg"),
+  normalMap: asset("block_dilapidated_norm.jpg"),
+  roughness: 0.4,
+  receiveShadow: true,
+  lights: [
+    {
+      position: [0, -2.5, 2],
+      color: 0xbbbbbb,
+    },
+  ],
+  components: [
+    {
+      url: asset("component_dilapidated_a.glb"),
+      castShadow: true,
+      texture: asset("dilapidated_color_a.jpg"),
+      normalMap: asset("dilapidated_norm_a.jpg"),
+      roughness: 0.4,
+      position: [0, -2, 0.3],
+    },
+    {
+      url: asset("component_dilapidated_b.glb"),
+      castShadow: true,
+      texture: asset("dilapidated_color_b.jpg"),
+      normalMap: asset("dilapidated_norm_b.jpg"),
+      roughness: 0.6,
+      position: [0, -2, 0.4],
+    }
   ],
 };
 
@@ -198,9 +351,9 @@ export const blocks = [stylish, fountain, vault, tv];
 // scene-graph instances. Columns without an entry fall back to a rotation of
 // `blocks` so adjacent columns start on different blocks.
 export const columns = [
-  [sideshow, stylish, stylish, stylish],
-  [fountain, vault, tv, stylish],
-  [vault, tv, stylish, fountain],
+  [sideshow, generic, dilapidated, generic],
+  [vault, generic, tv, vent],
+  [fancy, fountain, stylish, generic],
 ];
 
 export const columnBlocks = (index) =>
