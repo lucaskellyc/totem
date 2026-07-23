@@ -3,6 +3,30 @@ import * as THREE from "three";
 const CDN = "https://cdn.jsdelivr.net/gh/lucaskellyc/totem@stable/assets";
 const asset = (name) => `${CDN}/${name}`;
 
+// Reuse the tv model/lights while swapping the screen texture and playing video.
+// `texture` and `video` are asset names (passed through `asset()` here).
+const makeTv = ({ texture, video }) => ({
+    url: asset("block_tv.glb"),
+    texture: asset(texture),
+    receiveShadow: true,
+    lights: [
+      {
+        position: [0, -1, 2],
+        color: 0x94a6d4,
+        castShadow: true,
+      },
+    ],
+    components: [
+      {
+        url: asset("component_tv_a.glb"),
+        type: "unlit",
+        video: asset(video),
+        castShadow: false,
+        position: [0, -2.85, 0.05],
+      },
+    ],
+});
+
 export const stylish = {
     url: asset("block_stylish.glb"),
     normalMap: asset("block_stylish_norm.jpg"),
@@ -149,27 +173,21 @@ export const vault = {
     ],
 };
 
-export const tv = {
-    url: asset("block_tv.glb"),
-    texture: asset("tv_color_a.jpg"),
-    receiveShadow: true,
-    lights: [
-      {
-        position: [0, -1, 2],
-        color: 0x94a6d4,
-        castShadow: true,
-      },
-    ],
-    components: [
-      {
-        url: asset("component_tv_a.glb"),
-        type: "unlit",
-        video: asset("tv_1.mp4"),
-        castShadow: false,
-        position: [0, -2.85, 0.05],
-      },
-    ],
+export const sideshow = {
+  url: asset("block_sideshow.glb"),
+  lights: [],
+  components: [
+    {
+      url: asset("component_sideshow_a.glb"),
+      type: "unlit",
+
+    },
+  ],
 };
+
+export const tv = makeTv({ texture: "tv_color_a.jpg", video: "tv_1.mp4" });
+
+
 
 // Every block, used as the fallback rotation for columns without a custom set.
 export const blocks = [stylish, fountain, vault, tv];
@@ -180,7 +198,7 @@ export const blocks = [stylish, fountain, vault, tv];
 // scene-graph instances. Columns without an entry fall back to a rotation of
 // `blocks` so adjacent columns start on different blocks.
 export const columns = [
-  [stylish, fountain, vault, tv],
+  [sideshow, stylish, stylish, stylish],
   [fountain, vault, tv, stylish],
   [vault, tv, stylish, fountain],
 ];
