@@ -50,6 +50,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 - `lib/extras/effects.js` composite subclass removed; wire individual effects at the demo level.
 - `lib/totem/mount.js` helper removed; inline the `WebGLRenderer` / `Scene` / animate loop in your demo.
 
-## [0.1.0] - 2026-05-30
+## [0.1.0-alpha] - 2026-05-30
 ### Added
 - Initial release.
