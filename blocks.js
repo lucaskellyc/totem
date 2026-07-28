@@ -128,7 +128,22 @@ export const fancy = {
       roughness: 0.4,
       position: [0, -2, 0.15],
     },
-
+    {
+      object: () => {
+        const geo = new THREE.PlaneGeometry(2.2, 3);
+        const mat = new THREE.MeshBasicMaterial({
+          transparent: true,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+          side: THREE.DoubleSide,
+        });
+        return new THREE.Mesh(geo, mat);
+      },
+      castShadow: false,
+      type: "unlit",
+      video: asset("tall_3.mp4"),
+      position: [0, -2, 0],
+    },
   ],
 };
 
