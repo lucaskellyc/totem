@@ -89,7 +89,7 @@
                 opacity: 0.7;
                 pointer-events: none;
             }
-            #repo-link {
+            #info-link {
                 position: fixed;
                 top: 16px;
                 right: 16px;
@@ -105,23 +105,25 @@
                 line-height: 1;
                 z-index: 1;
                 opacity: 0;
-                padding: 8px 12px;
                 pointer-events: none;
                 transition:
                     background 0.18s ease,
-                    border-color 0.18s ease,
+                    transform 0.18s ease,
                     opacity 0.7s ease;
+                width: 40px;
+                height: 40px;
             }
-            #loading.done ~ #repo-link {
+            #loading.done ~ #info-link {
                 opacity: 1;
                 pointer-events: auto;
             }
-            #repo-link:hover {
+            #info-link:hover {
                 background: rgba(255, 255, 255, 0.12);
                 border-color: rgba(255, 255, 255, 0.2);
             }
-            #repo-link:active {
+            #info-link:active {
                 background: rgba(255, 255, 255, 0.12);
+                transform: scale(0.95);
             }
             #loading {
                 position: fixed;
@@ -154,7 +156,7 @@
                 transform: scale(1.1);
                 pointer-events: none;
             }
-            #loading-lottie {
+            #logo-lottie {
                 width: 380px;
                 height: 214px;
             }
@@ -169,6 +171,60 @@
             }
             #loading-bar.visible {
                 opacity: 1;
+            }
+            /* Wraps the bar so the error octagon can center over it. */
+            #loading-bar-wrap {
+                position: relative;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            /* Startup failed before the scene came up: a red stop-sign octagon
+               with an X pops in, centered over (and in front of) the bar. */
+            /* Outer octagon is the stroke colour; the inner octagon holds the
+               red fill, inset 2px so a uniform ring shows through as a border
+               (clip-path clips a normal CSS border, so we layer instead). */
+            #loading-error {
+                position: absolute;
+                left: 50%;
+                top: 50%;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #ff5888;
+                clip-path: polygon(
+                    30% 0%, 70% 0%, 100% 30%, 100% 70%,
+                    70% 100%, 30% 100%, 0% 70%, 0% 30%
+                );
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.6);
+                transition:
+                    opacity 0.3s ease,
+                    transform 0.3s ease;
+            }
+            #loading-error-inner {
+                position: absolute;
+                inset: 2px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: linear-gradient(#e02525, #ff5888);
+                clip-path: polygon(
+                    30% 0%, 70% 0%, 100% 30%, 100% 70%,
+                    70% 100%, 30% 100%, 0% 70%, 0% 30%
+                );
+            }
+            #loading-error svg {
+                width: 28px;
+                height: 28px;
+                stroke: #fff;
+                stroke-width: 3;
+            }
+            #loading-bar.error ~ #loading-error {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(1);
             }
             #loading-bar-fill {
                 border-radius: 25px;
@@ -216,30 +272,38 @@
         <div id="feather-top"></div>
         <div id="feather-bottom"></div>
         <div id="loading">
-            <div id="loading-lottie"></div>
-            <div id="loading-bar"><div id="loading-bar-fill"></div></div>
+            <div id="logo-lottie"></div>
+            <div id="loading-bar-wrap">
+                <div id="loading-bar"><div id="loading-bar-fill"></div></div>
+                <div id="loading-error" aria-hidden="true">
+                    <div id="loading-error-inner">
+                        <!-- One filled X (a plus rotated 45°) so it reads as a
+                             single shape rather than two overlapping strokes. -->
+                        <svg viewBox="0 0 24 24">
+                            <path
+                                transform="rotate(45 12 12)"
+                                d="M11 3.5 H13 V11 H20.5 V13 H13 V20.5 H11 V13 H3.5 V11 H11 Z"
+                            />
+                        </svg>
+                    </div>
+                </div>
+            </div>
         </div>
         <script type="module">
             import lottie from "lottie-web";
-            import { createElement, ArrowUpRight } from "lucide";
+            import { createElement, Info } from "lucide";
             lottie.loadAnimation({
-                container: document.getElementById("loading-lottie"),
+                container: document.getElementById("logo-lottie"),
                 renderer: "svg",
                 loop: false,
                 autoplay: true,
                 path: "./assets/logo.json",
             });
-            document.getElementById("repo-link").innerHTML = "Github";
-            document
-                .getElementById("repo-link")
-                .appendChild(createElement(ArrowUpRight));
+
+            document.getElementById("info-link").appendChild(createElement(Info));
         </script>
-        <a
-            id="repo-link"
-            href="https://github.com/lucaskellyc/totem"
-            target="_blank"
-            rel="noopener"
-            aria-label="View source on GitHub"
+        <a href="./info/"
+            id="info-link"
         >
         </a>
         <script type="module" src="./demo.js"></script>

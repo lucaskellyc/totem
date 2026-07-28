@@ -4,6 +4,7 @@ import { attachGestures } from "./lib/totem/gestures.js";
 import { VideoEffect } from "./lib/extras/video.js";
 import { WaterEffect } from "./lib/extras/water.js";
 import { BulbEffect } from "./lib/extras/bulb.js";
+import { SpinEffect } from "./lib/extras/spin.js";
 import { Filters } from "./lib/extras/filters.js";
 import { ColumnsRenderPass } from "./lib/extras/columnsPass.js";
 import { columnBlocks } from "./blocks.js";
@@ -36,7 +37,8 @@ const fovForAspect = (aspect) =>
   THREE.MathUtils.radToDeg(2 * Math.atan(H_HALF_TAN / aspect));
 
 const loadingFill = document.getElementById("loading-bar-fill");
-document.getElementById("loading-bar")?.classList.add("visible");
+const loadingBar = document.getElementById("loading-bar");
+loadingBar?.classList.add("visible");
 
 const container = document.body;
 
@@ -63,7 +65,11 @@ loadingManager.onProgress = (_url, loaded, total) => {
   targetProgress = loaded / total;
 };
 
+// Set once startup fails before the scene is up; freezes the fill so the
+// error morph (below) isn't fought by the easing loop.
+let errored = false;
 const animateLoadingBar = () => {
+  if (errored) return;
   // Smaller factor = smoother, slower catch-up.
   shownProgress += (targetProgress - shownProgress) * 0.06;
   if (targetProgress >= 1 && shownProgress > 0.999) shownProgress = 1;
@@ -71,6 +77,21 @@ const animateLoadingBar = () => {
   if (shownProgress < 1) requestAnimationFrame(animateLoadingBar);
 };
 requestAnimationFrame(animateLoadingBar);
+
+// Any error that stops the scene from starting collapses the loading bar into a
+// red octagon (see #loading-bar.error in index.html). Guarded so it only fires
+// while the loading screen is still up — failures after the scene is live (the
+// overlay has the `done` class) are ignored.
+const showLoadingError = () => {
+  const loading = document.getElementById("loading");
+  if (errored || !loading || loading.classList.contains("done")) return;
+  errored = true;
+  loadingBar?.classList.add("error");
+};
+// loadBlocks only awaits the first block; the rest load detached, so their
+// failures arrive as unhandled rejections — catch both those and sync errors.
+window.addEventListener("unhandledrejection", showLoadingError);
+window.addEventListener("error", showLoadingError);
 
 // Logical (renderer) width the column rects tile across.
 let totalWidth = container.clientWidth;
@@ -96,6 +117,14 @@ let collapsed = false;
 // or finger-down).
 let dragX = 0;
 let snapTarget = null;
+// Paging cooldown: `snapping` is true while a committed page eases to its
+// neighbour; `pageCooldownUntil` then holds off new swipes for a beat after it
+// lands. Together they stop a second flick from interrupting the first snap
+// (which would abort the pending page and spring back to the original column).
+const PAGE_COOLDOWN = 700; // ms to ignore further flicks after a page lands
+let snapping = false;
+let pageCooldownUntil = 0;
+const pagingBusy = () => snapping || performance.now() < pageCooldownUntil;
 
 const columns = Array.from({ length: COLUMN_COUNT }, (_, i) => {
   const scene = new THREE.Scene();
@@ -106,21 +135,25 @@ const columns = Array.from({ length: COLUMN_COUNT }, (_, i) => {
   const video = new VideoEffect();
   const water = new WaterEffect();
   const bulb = new BulbEffect({ hz: 1.5 });
+  const spin = new SpinEffect();
   const totem = new Totem({ loadingManager });
   totem._decorateBlock = ({ spec, root, components, componentRoots, group }) => {
     video.applyTo(root, spec, group);
     water.applyTo(root, spec);
     bulb.applyTo(root, spec);
+    spin.applyTo(root, spec);
     componentRoots.forEach((compRoot, ci) => {
       video.applyTo(compRoot, components[ci], group);
       water.applyTo(compRoot, components[ci]);
       bulb.applyTo(compRoot, components[ci]);
+      spin.applyTo(compRoot, components[ci]);
     });
   };
   totem._updateExtras = (t) => {
     video.update();
     water.update(t);
     bulb.update(t);
+    spin.update(t);
   };
   scene.add(totem);
 
@@ -131,6 +164,7 @@ const columns = Array.from({ length: COLUMN_COUNT }, (_, i) => {
     video,
     water,
     bulb,
+    spin,
     blocks: columnBlocks(i),
     rect: { x: 0, y: 0, w: 1, h: 1 },
     visible: true,
@@ -179,6 +213,8 @@ const layoutColumns = () => {
   // Leaving collapsed mode: clear any in-progress paging.
   dragX = 0;
   snapTarget = null;
+  snapping = false;
+  pageCooldownUntil = 0;
 
   let x = 0;
   columns.forEach((col, i) => {
@@ -240,6 +276,9 @@ const applyCollapsedLayout = () => {
 // Finger-tracking: offset the active column by the drag, clamped to one column.
 const dragColumns = (dx) => {
   if (!collapsed) return;
+  // Ignore input while a page is snapping/cooling down so a follow-up flick can't
+  // abort the in-flight snap.
+  if (pagingBusy()) return;
   const w = container.clientWidth;
   dragX = Math.max(-w, Math.min(w, dx));
   snapTarget = null;
@@ -253,11 +292,14 @@ const releaseColumns = (_dx, velocity) => {
     snapTarget = null;
     return;
   }
+  if (pagingBusy()) return;
   const w = container.clientWidth;
   const farEnough = Math.abs(dragX) > w * 0.25;
   const flicked =
     Math.abs(velocity) > 0.35 && Math.sign(velocity) === Math.sign(dragX);
   snapTarget = (farEnough || flicked) && dragX !== 0 ? Math.sign(dragX) * w : 0;
+  // Lock out further swipes until this page lands (and the cooldown elapses).
+  if (snapTarget !== 0) snapping = true;
 };
 
 // Advance the release animation each frame; commit the column change on landing.
@@ -270,9 +312,12 @@ const updatePaging = () => {
       const n = columns.length;
       activeColumn =
         snapTarget < 0 ? (activeColumn + 1) % n : (activeColumn - 1 + n) % n;
+      // Page landed: start the post-page cooldown before swipes are accepted.
+      pageCooldownUntil = performance.now() + PAGE_COOLDOWN;
     }
     dragX = 0;
     snapTarget = null;
+    snapping = false;
   }
   applyCollapsedLayout();
 };
@@ -298,20 +343,25 @@ function animate() {
 }
 animate();
 
-await new Promise((resolve) => setTimeout(resolve, 1500));
-await Promise.all(columns.map((col) => col.totem.loadBlocks(col.blocks)));
+try {
+  await new Promise((resolve) => setTimeout(resolve, 1500));
+  await Promise.all(columns.map((col) => col.totem.loadBlocks(col.blocks)));
 
-// Warm the GPU while the loading screen is still up: compile every column's
-// shaders (incl. shadow depth) and upload its textures, so blocks don't hitch
-// as they first render into view.
-await Promise.all(
-  columns.map((col) => renderer.compileAsync(col.scene, col.camera)),
-);
+  // Warm the GPU while the loading screen is still up: compile every column's
+  // shaders (incl. shadow depth) and upload its textures, so blocks don't hitch
+  // as they first render into view.
+  await Promise.all(
+    columns.map((col) => renderer.compileAsync(col.scene, col.camera)),
+  );
 
-// Let the eased loop glide the fill up to 100% rather than snapping it.
-targetProgress = 1;
-setTimeout(() => loadingFill?.classList.add("complete"), 1000);
-setTimeout(() => {
-  document.getElementById("loading")?.classList.add("done");
-  canvas.classList.add("intro-done");
-}, 2500);
+  // Let the eased loop glide the fill up to 100% rather than snapping it.
+  targetProgress = 1;
+  setTimeout(() => loadingFill?.classList.add("complete"), 1000);
+  setTimeout(() => {
+    document.getElementById("loading")?.classList.add("done");
+    canvas.classList.add("intro-done");
+  }, 2500);
+} catch (err) {
+  console.error("Scene failed to start:", err);
+  showLoadingError();
+}

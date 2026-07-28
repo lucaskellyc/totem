@@ -1,9 +1,9 @@
 ![Totem](assets/totem_logo.svg)
 
-<p>
-  <a href="https://lucaskellyc.github.io/totem/"><img src="assets/btn_demo.svg" alt="Demo" height="36"></a>
+#### An experimental block-based 3D scene builder made with [three.js](https://threejs.org/)
 
-</p>
+### [Demo](https://lucaskellyc.github.io/totem/)
+
 
 ## Use it in your own project
 
@@ -61,7 +61,7 @@ window.addEventListener("wheel", (e) => totem.scroll(e.deltaY / 500));
 | `lights`        | array             | see [Lights](#lights)                                             |
 | `components`    | array             | child specs (same shape as a block spec, plus `position`/`rotation`) |
 
-Components inherit every block-spec field, so any effect (`video`, `sound`, `blink`, `type: "water"`, …) works at either level.
+Components inherit every block-spec field, so any effect (`video`, `sound`, `blink`, `spin`, `type: "water"`, …) works at either level.
 
 ### Lights
 
@@ -106,6 +106,21 @@ Blinking, light-casting bulbs. Set `blink` on a `standard` spec that also has `e
   },
 }
 ```
+
+### Spin — `lib/extras/spin.js`
+
+Continuous rotation. Set `spin` on any mesh spec (block or component) to pick the axis and speed. `SpinEffect` rotates the mesh about its own origin each frame; call `spin.update(t)` in your render loop.
+
+```js
+{
+  spin: {
+    axis: "y",     // "x" | "y" | "z", or an [x, y, z] vector for an arbitrary axis
+    speed: 0.5,    // radians per second; negative reverses
+  },
+}
+```
+
+The spin composes on top of any static `rotation`, so a tilted mesh spins about the tilted axis. Rotation happens after the block's height/focus are measured, so it won't shift layout.
 
 ### Sound — `lib/extras/sound.js`
 
