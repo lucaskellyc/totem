@@ -358,7 +358,11 @@ export const sideshow = {
   components: [
     {
       url: asset("component_sideshow_a.glb"),
-      type: "unlit",
+      type: "standard",
+      normalMap: asset("sideshow_norm_a.jpg"),
+      metalness: 0.8,
+      roughness: 0.4,
+      color: 0xb68468,
     },
     {
       url: asset("component_sideshow_b1.glb"),
