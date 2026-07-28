@@ -7,7 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
-## [0.2.0] - 2026-07-01
+## [0.3.0-alpha] - 2026-07-28
+
+### Added
+- `lib/extras/bulb.js` — `BulbEffect` class. Opt in via `blink` on a `standard` spec with `emissive`/`emissiveIntensity`; hard-toggles the material's `emissiveIntensity` each frame and drives a synced `THREE.PointLight` so the bulb casts light as it glows. Construct with `new BulbEffect({ hz })`. (Reintroduces blink behavior removed in 0.2.0, now as an opt-in extra that also casts light.)
+- `lib/extras/spin.js` — `SpinEffect` class. Opt in via `spin` (`axis`, `speed`) on any block or component spec; rotates the mesh about its own origin each frame, composing on top of any static `rotation` and after layout is measured.
+- Demo: multiple side-by-side columns that share one frame and collapse to a single center column on narrow viewports, with horizontal paging between columns.
+- Demo: named block exports and per-column block lists.
+- Demo: new blocks and components with assets — sideshow, construction, corporate, sewer, and neon-sign meshes, plus additional TV screens.
+- `dev` / `build` / `preview` npm scripts (Vite) and a `.gitignore` entry for `dist/`.
+
+### Changed
+- `lib/totem/gestures.js` — collapsed-mode flick paging reworked so short/fast and back-to-back flicks page reliably instead of snapping back: flick velocity is measured over a trailing window, a baseline sample is seeded at `pointerdown`, and a horizontal-dominant press→release resolves as a swipe even when the axis never locks.
+- `lib/totem/totem.js`, `lib/totem/lights.js` — scroll-based emissive/light fade refinements supporting the new bulbs and neon signs.
+- `lib/extras/video.js`, `lib/extras/water.js` — minor effect fixes.
+- Demo: center column scrolls opposite its neighbours, horizontal FOV is held constant to stop side cropping, TV block configuration refactored, and the loading bar eases its fill instead of snapping.
+
+### Removed
+- Unused demo assets `assets/godrays.mp4` and `assets/tv_color_a.jpg`.
+
+## [0.2.0-alpha] - 2026-07-01
 
 ### Added
 - `spec.object` on blocks and components — accepts a `THREE.Object3D` or a factory returning one, as an alternative to `spec.url` (GLB). Lets you inline any three.js primitive or custom mesh with no per-type registration.
