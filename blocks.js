@@ -1,6 +1,4 @@
 import * as THREE from "three";
-import { color, metalness, roughness } from "three/src/nodes/TSL.js";
-import { texture } from "three/tsl";
 
 const CDN = "https://cdn.jsdelivr.net/gh/lucaskellyc/totem@stable/assets";
 // Dev serves new/untracked files straight from the local `assets/` folder via
