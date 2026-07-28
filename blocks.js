@@ -3,7 +3,10 @@ import * as THREE from "three";
 const CDN = "https://cdn.jsdelivr.net/gh/lucaskellyc/totem@stable/assets";
 // Dev serves new/untracked files straight from the local `assets/` folder via
 // Vite (VITE_ASSET_URL=/assets in .env.development); prod falls back to the CDN.
-const BASE = import.meta.env.VITE_ASSET_URL ?? CDN;
+// The `?.` is required: in raw prod (Pages serves the files with no Vite),
+// `import.meta.env` is undefined, so `import.meta.env.VITE_ASSET_URL` would throw.
+// Optional chaining lets it fall through to the CDN instead.
+const BASE = import.meta.env?.VITE_ASSET_URL ?? CDN;
 const asset = (name) => `${BASE}/${name}`;
 
 // Reuse the tv model/lights while swapping the screen texture and playing video.
