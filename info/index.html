@@ -6,13 +6,14 @@
             name="viewport"
             content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
         />
-        <meta name="theme-color" content="black" />
+        <meta name="theme-color" content="#000000" />
         <title>totem — a three.js experiment</title>
         <!-- Warm up the esm.sh connection and prefetch the icon module so
              createIcons() runs (and the SVG swap happens) as early as possible. -->
         <link rel="preconnect" href="https://esm.sh" crossorigin />
         <link rel="modulepreload" href="https://esm.sh/lucide@0.460.0" />
         <link rel="modulepreload" href="https://esm.sh/lottie-web@5.12.2" />
+        <link rel="modulepreload" href="https://esm.sh/@mux/mux-video@0.31.2" />
         <style>
             * {
                 color: white;
@@ -156,19 +157,29 @@
             }
 
             #hero-loop {
+                display: block;
                 background-color: black;
                 width: 75vw;
                 max-width: 450px;
                 aspect-ratio: 4/3;
                 box-shadow: none;
                 border: solid 4px #333;
+                border-radius: 32px;
+                overflow: hidden;
+                /* Cover the 4:3 box regardless of the source ratio. The custom
+                   property reaches mux-video's internal <video> in shadow DOM;
+                   object-fit is a fallback for plain-video rendering paths. */
+                object-fit: cover;
+                --media-object-fit: cover;
+                transition: opacity 0.6s ease;
             }
         </style>
         <script type="importmap">
             {
                 "imports": {
                     "lottie-web": "https://esm.sh/lottie-web@5.12.2",
-                    "lucide": "https://esm.sh/lucide@0.460.0"
+                    "lucide": "https://esm.sh/lucide@0.460.0",
+                    "@mux/mux-video": "https://esm.sh/@mux/mux-video@0.31.2"
                 }
             }
         </script>
@@ -178,7 +189,7 @@
             <div id="logo-lottie" class="hidden"></div>
             <span class="hidden">
                 <a class="chip chip-link normal" href="https://github.com/lucaskellyc/totem">
-                    GitHub
+                    Repo
                     <i data-lucide="arrow-up-right"></i>
                 </a>
                 <a class="chip chip-link raised" href="https://lucaskellyc.github.io/totem/">
@@ -188,7 +199,16 @@
             </span>
         </header>
         <main>
-            <div id="hero-loop" class="hidden"></div>
+            <mux-video
+                id="hero-loop"
+                class="hidden"
+                playback-id="gv00qmMc53z1l5h7rqh835m5K02sutdjYbJsEjVswTowI"
+                autoplay
+                muted
+                loop
+                playsinline
+                preload="auto"
+            ></mux-video>
             <div class="hidden">
                 <p><strong>Totem</strong> is an experimental block-based 3D scene builder created using <a href="https://threejs.org/">three.js<i data-lucide="arrow-up-right"></i></a></p>
             </div>
@@ -196,6 +216,7 @@
         <script type="module">
           import lottie from "lottie-web";
           import { createIcons, ArrowUpRight, ArrowRight, Cog } from "lucide";
+          import "@mux/mux-video"; // registers the <mux-video> custom element
 
           lottie.loadAnimation({
               container: document.getElementById("logo-lottie"),
