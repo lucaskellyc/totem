@@ -1,6 +1,6 @@
 {
   "name": "totem",
-  "version": "0.3.0-alpha",
+  "version": "0.3.1-alpha",
   "description": "An experimental block-based 3D scene builder for three.js",
   "author": "Lucas Kelly",
   "license": "MIT",

@@ -8,22 +8,71 @@
         />
         <meta name="theme-color" content="#000000" />
         <title>totem — a three.js experiment</title>
+        <meta
+            name="description"
+            content="An experimental block-based 3D scene builder made with three.js — scrollable columns of dynamically lit multimedia displays, packaged as a small open-source library."
+        />
+        <link rel="icon" type="image/svg+xml" href="/assets/jacks.svg" />
+        <!-- Open Graph / Twitter: unfurl links with a still pulled from the hero
+             video (Mux serves a thumbnail image straight off the playback id). -->
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://lucaskellyc.github.io/totem/info/" />
+        <meta property="og:title" content="totem — a three.js experiment" />
+        <meta
+            property="og:description"
+            content="Scrollable columns of dynamically lit multimedia displays — video, water, blinking bulbs, spin, spatial sound — as a small open-source three.js library."
+        />
+        <meta
+            property="og:image"
+            content="https://image.mux.com/olsf01Vym2wKMOXLobietxj78S701nDnb5U00RjWw3Ybq4/thumbnail.png?width=1200&amp;height=630&amp;fit_mode=smartcrop&amp;time=1"
+        />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="totem — a three.js experiment" />
+        <meta
+            name="twitter:description"
+            content="Scrollable columns of dynamically lit multimedia displays, packaged as a small open-source three.js library."
+        />
+        <meta
+            name="twitter:image"
+            content="https://image.mux.com/olsf01Vym2wKMOXLobietxj78S701nDnb5U00RjWw3Ybq4/thumbnail.png?width=1200&amp;height=630&amp;fit_mode=smartcrop&amp;time=1"
+        />
         <!-- Warm up the esm.sh connection and prefetch the icon module so
              createIcons() runs (and the SVG swap happens) as early as possible. -->
         <link rel="preconnect" href="https://esm.sh" crossorigin />
         <link rel="modulepreload" href="https://esm.sh/lucide@0.460.0" />
-        <link rel="modulepreload" href="https://esm.sh/lottie-web@5.12.2" />
         <link rel="modulepreload" href="https://esm.sh/@mux/mux-video@0.31.2" />
         <style>
             * {
                 color: white;
                 font-family: sans-serif;
             }
+            /* Safari (iOS 26+) ignores <meta name="theme-color"> and instead
+               samples the root element's background to tint the status bar /
+               titlebar, so paint <html> black — not just <body>. */
+            html,
             body {
                 background: black;
+                /* Nothing is selectable by default; only real text opts back in
+                   (see the user-select: text rule below), so drag-selecting
+                   catches the copy/body text but not the empty space, cards,
+                   gaps and chrome around it. */
+                -webkit-user-select: none;
+                user-select: none;
+            }
+            /* The text that's worth highlighting — copy, headings, feature
+               blurbs, code. Descendants (strong/b/small/code) inherit it. */
+            main p,
+            main h2,
+            .feature div,
+            .code {
+                -webkit-user-select: text;
+                user-select: text;
             }
 
             header {
+                position: relative;
                 display: flex;
                 flex-direction: column;
                 justify-content: start;
@@ -31,9 +80,92 @@
                 text-align: center;
                 margin-top: 24px
             }
-            header #logo-lottie {
-                width: 180px;
-                height: 100px;
+            /* Centred over — and overlapping — the hero video. #title is out of
+               flow, so the video alone sizes the header box; top/left 50% +
+               translate then centres the title on that box. */
+            header #title {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 2;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+            }
+            /* Frosted-glass wordmark over the hero video: the totem logo SVG is
+               used as an alpha mask (its paths are solid, so the shape shows in
+               either colour scheme), and the backdrop-filter + faint fill only
+               show through that shape — a blurred, brightened cut-out of the
+               video behind it. */
+            header .logo {
+                position: relative;
+                width: 60vw;
+                max-width: 300px;
+                aspect-ratio: 161 / 87;
+                pointer-events: none;
+                background: linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.8));
+                -webkit-backdrop-filter: blur(7px) brightness(1.6)
+                    saturate(1.5);
+                backdrop-filter: blur(7px) brightness(1.6) saturate(1.5);
+                -webkit-mask: url("../assets/totem_logo.svg") no-repeat center /
+                    contain;
+                mask: url("../assets/totem_logo.svg") no-repeat center / contain;
+            }
+            /* Drop shadow for the wordmark. A masked element can't cast one
+               itself (its mask clips the filter's shadow away), and a
+               drop-shadow on an ancestor would isolate .logo's backdrop-filter
+               and kill the video reveal — so this is a SIBLING behind .logo: a
+               dark copy of the wordmark, offset down and blurred. .logo-shadow
+               carries the blur so it lands AFTER ::before's mask (feathering the
+               shadow rather than re-clipping it to a hard edge). */
+            header .logo-shadow {
+                position: absolute;
+                top: 0;
+                left: 50%;
+                width: 60vw;
+                max-width: 300px;
+                aspect-ratio: 161 / 87;
+                transform: translate(-50%, 5px);
+                z-index: -1;
+                pointer-events: none;
+                filter: blur(5px);
+            }
+            header .logo-shadow::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.6);
+                -webkit-mask: url("../assets/totem_logo.svg") no-repeat center /
+                    contain;
+                mask: url("../assets/totem_logo.svg") no-repeat center / contain;
+            }
+            /* Top-edge highlight (bevel): .logo-hl::before is a white layer
+               masked by the wordmark MINUS a copy of itself nudged down 2.5px,
+               so only a thin band along each stroke's upper contour survives.
+               .logo-hl then blurs that finished band to feather its edges, and
+               .logo's own wordmark mask clips any soft spill back inside the
+               letters. Standard mask-composite; degrades gracefully without it. */
+            header .logo-hl {
+                position: absolute;
+                inset: 0;
+                filter: blur(1.2px);
+            }
+            header .logo-hl::before {
+                content: "";
+                position: absolute;
+                inset: 0;
+                background: rgba(255, 255, 255, 0.8);
+                -webkit-mask:
+                    url("../assets/totem_logo.svg") no-repeat center / contain,
+                    url("../assets/totem_logo.svg") no-repeat center 2px /
+                        contain;
+                mask:
+                    url("../assets/totem_logo.svg") no-repeat center / contain,
+                    url("../assets/totem_logo.svg") no-repeat center 2px /
+                        contain;
+                mask-composite: subtract;
             }
             header span {
                 display: flex;
@@ -52,6 +184,7 @@
                 display: inline-flex;
                 align-items: center;
                 padding: 8px 16px;
+                padding-right: 12px;
                 border-radius: 24px;
                 margin: 24px 6px;
                 font-size: 16px;
@@ -85,7 +218,7 @@
             .chip-link.raised {
                 background: linear-gradient(to bottom, #bbb, white);
                 color: black;
-                box-shadow: inset 0 2px 2px white;
+                box-shadow: inset 0 2px 2px white, 0 2px 4px rgba(0, 0, 0, 0.7);
             }
             .chip-link.raised:hover {
                 background: white;
@@ -95,12 +228,15 @@
             }
 
             .chip-link.normal {
-                background-color: #333;
+                background-color: rgba(100, 100, 100, 0.4);
+                backdrop-filter: blur(10px) saturate(1.5);
                 color: white;
-                box-shadow: inset 0 2px 2px #555;
+                box-shadow:
+                    inset 0 2px 2px rgba(255, 255, 255, 0.3),
+                    0 2px 4px rgba(0, 0, 0, 0.7);
             }
             .chip-link.normal:hover {
-                background: #555;
+                background-color: rgba(100, 100, 100, 0.6);
             }
             .chip-link.normal svg {
                 stroke: white;
@@ -123,27 +259,28 @@
                 align-items: center;
                 gap: 24px;
             }
-            main div {
+            main > div {
                 background-color: #333;
-                padding: 10px 25px;
                 border-radius: 32px;
                 box-shadow: inset 0 2px 2px #555;
+                width: 84vw;
+                max-width: 520px;
             }
             main p {
-                display: inline-block;
-                max-width: 360px;
+                color: #ddd;
+                display: block;
                 text-wrap: pretty;
-                text-align: center;
+                text-align: left;
+                padding: 10px 25px;
+                line-height: 1.5;
             }
             p a {
-                background-color: #555;
                 display: inline-flex;
                 align-content: center;
+                justify-content: center;
+                align-items: center;
                 text-decoration: none;
                 font-weight: bold;
-                border-radius: 25px;
-                margin: 4px 0;
-                padding: 2px 0 2px 6px;
             }
             p a:hover {
                 color: #ddd;
@@ -152,19 +289,129 @@
                 stroke: #ddd;
             }
             p a svg {
-                height: 18px;
+                height: 12px;
                 stroke-width: 3px;
+            }
+
+            /* Small monospace label above each content section. */
+            main h2 {
+                margin: 0;
+                padding: 28px 24px 12px;
+                text-align: left;
+                font-family: monospace;
+                font-size: 12px;
+                letter-spacing: 0.08em;
+                text-transform: uppercase;
+                color: #8a8a8a;
+            }
+            /* Feature grid: the opt-in "extras" at a glance. auto-fit collapses
+               it to a single column on narrow phones. */
+            .features {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+                gap: 2px 14px;
+                padding: 6px 25px 18px;
+                text-align: left;
+            }
+            .feature {
+                display: flex;
+                align-items: flex-start;
+                gap: 10px;
+                padding: 10px 0;
+            }
+            .feature svg {
+                flex: none;
+                stroke: #fff;
+                margin-top: 1px;
+            }
+            .feature b {
+                display: block;
+                color: #fff;
+                font-size: 14px;
+            }
+            .feature small {
+                color: #999;
+                font-size: 12.5px;
+                line-height: 1.4;
+            }
+            /* Code block with a corner copy button. */
+            .code {
+                position: relative;
+                margin: 6px 25px 20px;
+                border-radius: 24px;
+                background: #1c1c1c;
+                text-align: left;
+                overflow: hidden;
+            }
+            .code pre {
+                margin: 0;
+                padding: 16px 18px;
+                overflow-x: auto;
+                font-size: 13px;
+                line-height: 1.6;
+                color: #ddd;
+            }
+            /* The universal `* { font-family: sans-serif }` matches <code>
+               directly, overriding what it'd inherit from <pre> — so set the
+               monospace (and colour) on <code> itself. */
+            .code code {
+                font-family: monospace;
+                color: inherit;
+            }
+            .code .copy {
+                position: absolute;
+                top: 12px;
+                right: 12px;
+                display: inline-flex;
+                width: 32px;
+                height: 32px;
+                padding: 0;
+                border: none;
+                border-radius: 24px;
+                background: rgba(255, 255, 255, 0.08);
+                cursor: pointer;
+                transition:
+                    background 0.15s ease,
+                    transform 0.1s ease;
+                -webkit-user-select: none;
+                user-select: none;
+            }
+            .code .copy:hover {
+                background: rgba(255, 255, 255, 0.16);
+            }
+            .code .copy:active {
+                transform: scale(0.92);
+            }
+            /* Copy + check icons stacked; .copied swaps which one shows. */
+            .code .copy i,
+            .code .copy svg {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                stroke: #ccc;
+            }
+            .code .copy [data-lucide="check"],
+            .code .copy .lucide-check {
+                display: none;
+            }
+            .code .copy.copied [data-lucide="copy"],
+            .code .copy.copied .lucide-copy {
+                display: none;
+            }
+            .code .copy.copied [data-lucide="check"],
+            .code .copy.copied .lucide-check {
+                display: inline-block;
+                stroke: #7ee787;
             }
 
             #hero-loop {
                 display: block;
                 background-color: black;
-                width: 75vw;
-                max-width: 450px;
+                width: 100vw;
+                max-width: 640px;
                 aspect-ratio: 4/3;
                 box-shadow: none;
-                border: solid 4px #333;
-                border-radius: 32px;
                 overflow: hidden;
                 /* Cover the 4:3 box regardless of the source ratio. The custom
                    property reaches mux-video's internal <video> in shadow DOM;
@@ -173,11 +420,61 @@
                 --media-object-fit: cover;
                 transition: opacity 0.6s ease;
             }
+
+            /* Footer: version, attribution and copyright — small muted
+               monospace, matching the section-label treatment. Not in the
+               shared transition rule, so it carries its own fade for the
+               staggered .hidden reveal. */
+            footer {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+                margin: 44px 0 32px;
+                padding: 0 24px;
+                text-align: center;
+                font-family: monospace;
+                font-size: 12px;
+                color: #777;
+                transition: opacity 0.6s ease;
+            }
+            footer .version {
+                padding: 4px 12px;
+                border-radius: 999px;
+                background: #1c1c1c;
+                box-shadow: inset 0 2px 2px #333;
+                color: #bbb;
+                letter-spacing: 0.04em;
+                text-decoration: none;
+            }
+            footer nav {
+                display: flex;
+                flex-direction: row;
+                justify-content: center;
+                align-items: center;
+                gap: 4px 10px;
+            }
+            footer .sep {
+                color: #555;
+            }
+            /* * { color: white } hits <small> directly, so re-mute it here; keep
+               it at the footer's size rather than the browser's smaller default. */
+            footer small {
+                font-size: inherit;
+                color: #777;
+            }
+            footer a {
+                color: #999;
+                text-decoration: none;
+            }
+            footer a:hover,
+            footer .version:hover {
+                color: #fff;
+            }
         </style>
         <script type="importmap">
             {
                 "imports": {
-                    "lottie-web": "https://esm.sh/lottie-web@5.12.2",
                     "lucide": "https://esm.sh/lucide@0.460.0",
                     "@mux/mux-video": "https://esm.sh/@mux/mux-video@0.31.2"
                 }
@@ -186,52 +483,163 @@
     </head>
     <body>
         <header>
-            <div id="logo-lottie" class="hidden"></div>
-            <span class="hidden">
-                <a class="chip chip-link normal" href="https://github.com/lucaskellyc/totem">
-                    Repo
-                    <i data-lucide="arrow-up-right"></i>
-                </a>
-                <a class="chip chip-link raised" href="https://lucaskellyc.github.io/totem/">
-                    Demo
-                    <i data-lucide="arrow-right"></i>
-                </a>
-            </span>
-        </header>
-        <main>
+            <div id="title">
+                <div class="logo-shadow hidden" aria-hidden="true"></div>
+                <div class="logo hidden" role="img" aria-label="totem">
+                    <span class="logo-hl"></span>
+                </div>
+                <span class="hidden">
+                    <a class="chip chip-link normal" href="https://github.com/lucaskellyc/totem">
+                        Repo
+                        <i data-lucide="arrow-up-right"></i>
+                    </a>
+                    <a class="chip chip-link raised" href="https://lucaskellyc.github.io/totem/">
+                        Demo
+                        <i data-lucide="arrow-right"></i>
+                    </a>
+                </span>
+            </div>
+
             <mux-video
                 id="hero-loop"
                 class="hidden"
-                playback-id="gv00qmMc53z1l5h7rqh835m5K02sutdjYbJsEjVswTowI"
+                playback-id="olsf01Vym2wKMOXLobietxj78S701nDnb5U00RjWw3Ybq4"
                 autoplay
                 muted
                 loop
                 playsinline
                 preload="auto"
             ></mux-video>
+        </header>
+        <main>
             <div class="hidden">
-                <p><strong>Totem</strong> is an experimental block-based 3D scene builder created using <a href="https://threejs.org/">three.js<i data-lucide="arrow-up-right"></i></a></p>
+                <p><strong>Totem</strong> is an experimental art project started as a college senior project. The experience features <strong>scrollable columns of dynamically lit multimedia displays</strong> — video, water, blinking bulbs, spinning parts and spatially-anchored sound, all composited through a bloom-and-fisheye post chain.</p>
+
+            </div>
+
+            <div class="hidden">
+                <p>Under the hood it's a small, open-source <a href="https://threejs.org">three.js <i data-lucide="arrow-up-right"></i></a> library: describe a stack of blocks with plain specs and Totem loads, lights and animates them.</p>
+            </div>
+
+            <div class="hidden">
+                <h2>What's inside</h2>
+                <div class="features">
+                    <div class="feature">
+                        <i data-lucide="clapperboard"></i>
+                        <div><b>Video</b><small>Textures that play video, gated to what's on screen</small></div>
+                    </div>
+                    <div class="feature">
+                        <i data-lucide="waves"></i>
+                        <div><b>Water</b><small>Customizable shader-driven flowing water surfaces</small></div>
+                    </div>
+                    <div class="feature">
+                        <i data-lucide="lightbulb"></i>
+                        <div><b>Lights</b><small>Blinking emmissive light sources, like neon signs</small></div>
+                    </div>
+                    <div class="feature">
+                        <i data-lucide="rotate-3d"></i>
+                        <div><b>Spin</b><small>Continuous rotation on any axis</small></div>
+                    </div>
+                    <div class="feature">
+                        <i data-lucide="audio-waveform"></i>
+                        <div><b>Sound</b><small>Spatially-anchored positional audio</small></div>
+                    </div>
+                    <div class="feature">
+                        <i data-lucide="blend"></i>
+                        <div><b>Filters</b><small>Bloom, fisheye and edge-blur post FX</small></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="hidden">
+                <h2>Use it in your project</h2>
+                <div class="code">
+                    <button class="copy" type="button" aria-label="Copy install commands">
+                        <i data-lucide="copy"></i>
+                        <i data-lucide="check"></i>
+                    </button>
+                    <pre><code>npm i three
+npm i github:lucaskellyc/totem</code></pre>
+                </div>
+                <div class="code">
+                    <button class="copy" type="button" aria-label="Copy usage snippet">
+                        <i data-lucide="copy"></i>
+                        <i data-lucide="check"></i>
+                    </button>
+                    <pre><code>import { Totem } from "totem";
+
+const totem = new Totem();
+scene.add(totem);
+
+await totem.loadBlocks([
+  { url: "/block.glb", texture: "/block.jpg" },
+]);
+
+totem.update(); // in your render loop</code></pre>
+                </div>
             </div>
         </main>
+        <footer class="hidden">
+
+            <nav>
+                <a
+                    class="version"
+                    href="https://github.com/lucaskellyc/totem/blob/stable/CHANGELOG.md"
+                    >v0.3.1-alpha</a
+                >
+                <span class="sep">·</span>
+                <a href="https://github.com/lucaskellyc/totem/blob/stable/LICENSE">MIT License</a>
+            </nav>
+        </footer>
         <script type="module">
-          import lottie from "lottie-web";
-          import { createIcons, ArrowUpRight, ArrowRight, Cog } from "lucide";
+          import {
+              createIcons,
+              ArrowUpRight,
+              ArrowRight,
+              Clapperboard,
+              Waves,
+              Lightbulb,
+              Rotate3d,
+              AudioWaveform,
+              Blend,
+              Copy,
+              Check,
+          } from "lucide";
           import "@mux/mux-video"; // registers the <mux-video> custom element
 
-          lottie.loadAnimation({
-              container: document.getElementById("logo-lottie"),
-              renderer: "svg",
-              loop: false,
-              autoplay: true,
-              path: "../assets/logo.json",
-          });
           document.querySelectorAll(".hidden").forEach((element, i) => {
             setTimeout(() => {
               element.classList.remove("hidden");
             }, i * 100)
           });
 
-          createIcons({ icons: { ArrowUpRight, ArrowRight, Cog } });
+          createIcons({
+              icons: {
+                  ArrowUpRight,
+                  ArrowRight,
+                  Clapperboard,
+                  Waves,
+                  Lightbulb,
+                  Rotate3d,
+                  AudioWaveform,
+                  Blend,
+                  Copy,
+                  Check,
+              },
+          });
+
+          // Copy-to-clipboard for the code blocks; flips the button to a check
+          // for a beat on success. Needs a secure context (Pages/localhost).
+          document.querySelectorAll(".code .copy").forEach((btn) => {
+            btn.addEventListener("click", async () => {
+              const pre = btn.parentElement.querySelector("pre");
+              try {
+                await navigator.clipboard.writeText(pre.innerText.trim());
+                btn.classList.add("copied");
+                setTimeout(() => btn.classList.remove("copied"), 1400);
+              } catch {}
+            });
+          });
         </script>
     </body>
 </html>

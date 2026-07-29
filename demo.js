@@ -1,6 +1,9 @@
 import * as THREE from "three";
 import { Totem } from "./lib/totem/totem.js";
 import { attachGestures } from "./lib/totem/gestures.js";
+import { createToaster } from "./lib/totem/toasts.js";
+import { createPageDots } from "./lib/totem/pageDots.js";
+import { isMobile } from "./lib/totem/env.js";
 import { VideoEffect } from "./lib/extras/video.js";
 import { WaterEffect } from "./lib/extras/water.js";
 import { BulbEffect } from "./lib/extras/bulb.js";
@@ -42,6 +45,18 @@ loadingBar?.classList.add("visible");
 
 const container = document.body;
 
+// Overlay for transient hint toasts drawn on top of the canvas.
+const toaster = createToaster(document.getElementById("toast-layer"));
+
+// Pagination dots, shown only while paging one column at a time (collapsed
+// mode). Gated on `introReady` so they don't flash over the loading screen.
+const pageDots = createPageDots(document.getElementById("page-dots"), COLUMN_COUNT);
+let introReady = false;
+const syncPageDots = () => {
+  pageDots.setVisible(introReady && collapsed && COLUMN_PAGING);
+  if (collapsed) pageDots.setActive(activeColumn);
+};
+
 const renderer = new THREE.WebGLRenderer({
   antialias: true,
   powerPreference: "high-performance",
@@ -49,7 +64,9 @@ const renderer = new THREE.WebGLRenderer({
 const canvas = renderer.domElement;
 container.appendChild(canvas);
 renderer.setSize(container.clientWidth, container.clientHeight, false);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+// A 3× phone at 1.5 pushes ~2.25× the pixels of 1× through the post chain
+// every frame; cap lower on mobile. Desktop keeps 1.5.
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.25 : 1.5));
 renderer.setClearColor(0x000000, 1);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFShadowMap;
@@ -182,6 +199,10 @@ const columns = Array.from({ length: COLUMN_COUNT }, (_, i) => {
     onSwipeMove: (dx) => dragColumns(dx),
     onSwipeEnd: (dx, velocity) => releaseColumns(dx, velocity),
   });
+  // Collapsed mode shows one column at a time; pause hidden columns' videos so
+  // only the on-screen column(s) hold a hardware decoder. On desktop every
+  // column stays visible, so the gate is always open — no behaviour change.
+  col.video.enabled = () => col.visible;
   return col;
 });
 
@@ -207,6 +228,7 @@ const layoutColumns = () => {
       col.camera.updateProjectionMatrix();
     });
     applyCollapsedLayout();
+    syncPageDots();
     return;
   }
 
@@ -228,6 +250,7 @@ const layoutColumns = () => {
     col.camera.updateProjectionMatrix();
     x += cw;
   });
+  syncPageDots();
 };
 
 // Brightness for a column whose band sits at offset x (0 = centred): full at
@@ -312,6 +335,7 @@ const updatePaging = () => {
       const n = columns.length;
       activeColumn =
         snapTarget < 0 ? (activeColumn + 1) % n : (activeColumn - 1 + n) % n;
+      pageDots.setActive(activeColumn);
       // Page landed: start the post-page cooldown before swipes are accepted.
       pageCooldownUntil = performance.now() + PAGE_COOLDOWN;
     }
@@ -335,8 +359,19 @@ window.visualViewport?.addEventListener("resize", onResize);
 function animate() {
   requestAnimationFrame(animate);
   for (const col of columns) {
-    col.gestures.update();
-    col.totem.update();
+    // Collapsed mode hides all but the active (and sliding-in) column, and
+    // ColumnsRenderPass doesn't draw the hidden ones — so skip their per-frame
+    // CPU work too (mesh/light/emissive fades, water/bulb/spin, autoscroll).
+    // Everything they'd compute is derived fresh from position when they next
+    // become visible, so nothing goes stale. Still tick their video gate,
+    // though: that's what pauses a column that just left the screen so it
+    // releases its hardware decoder (scarce on iOS).
+    if (col.visible) {
+      col.gestures.update();
+      col.totem.update();
+    } else {
+      col.video.update();
+    }
   }
   updatePaging();
   filters.render();
@@ -360,6 +395,14 @@ try {
   setTimeout(() => {
     document.getElementById("loading")?.classList.add("done");
     canvas.classList.add("intro-done");
+    // The loading screen is gone; let the pagination dots fade in.
+    introReady = true;
+    syncPageDots();
+    // Nudge first-timers toward the interaction that fits this layout: in
+    // collapsed mode a horizontal swipe pages columns; otherwise drag scrolls.
+    const hint =
+      collapsed && COLUMN_PAGING ? "Scroll and swipe to explore" : "Scroll or drag to explore";
+    setTimeout(() => toaster.show(hint, { id: "intro", duration: 4000 }), 600);
   }, 2500);
 } catch (err) {
   console.error("Scene failed to start:", err);

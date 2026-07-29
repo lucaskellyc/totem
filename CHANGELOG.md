@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.1-alpha] - 2026-07-29
+
+### Added
+- `lib/totem/env.js` — shared `isMobile` (coarse-pointer) check, so the mobile graphics defaults are decided in one place instead of being re-detected per module.
+- `lib/totem/loaders.js` — texture-size cap on touch devices: any map whose longest edge exceeds 1024 px is downscaled before it reaches the GPU, keeping iOS Safari under its per-tab texture-memory budget (fixes the silent tab reloads). Desktop still uploads at native size.
+- `lib/extras/video.js` — optional `enabled` gate (`() => boolean`) on `VideoEffect`; while it returns false every video is paused so it releases its hardware decoder (iOS exposes only a few). Videos also default to `preload: "metadata"` with no autoplay, so each buffers/decodes only once it plays in focus rather than all at once on load.
+- Demo: `lib/totem/pageDots.js` — pagination dots shown while paging one column at a time (collapsed mode).
+- Demo: `lib/totem/toasts.js` — transient hint toasts over the canvas, with a first-load nudge toward the gesture that fits the current layout.
+- Info page: an at-a-glance features grid, copy-to-clipboard install/usage snippets, a footer (version + license), Open Graph / Twitter unfurl metadata, and an SVG favicon (shared with the demo).
+
+### Changed
+- `lib/totem/lights.js` — point-light shadow maps drop to 512 px on mobile (from 1024 px), quartering per-light shadow cost; desktop is unchanged.
+- Demo: lower renderer pixel ratio on touch devices (1.25 vs 1.5), and off-screen columns skip their per-frame CPU work — only their video gate keeps ticking so a column that just left the screen releases its decoder.
+- Info page: the Lottie wordmark is replaced with a frosted-glass logo composited over the hero video, the hero swaps to a new Mux asset, and the `lottie-web` dependency is dropped from the page.
+
+### Fixed
+- Demo: removed dead TSL imports that broke the raw importmap-served demo, and guarded `import.meta.env` access so the modules run when served raw in production.
+
 ## [0.3.0-alpha] - 2026-07-28
 
 ### Added
