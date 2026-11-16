@@ -58,7 +58,10 @@ const syncPageDots = () => {
 };
 
 const renderer = new THREE.WebGLRenderer({
-  antialias: true,
+  // Every frame goes through the EffectComposer, so the canvas only ever
+  // receives a full-screen quad — MSAA on it smooths nothing and just costs
+  // memory and bandwidth (worst on iOS).
+  antialias: false,
   powerPreference: "high-performance",
 });
 const canvas = renderer.domElement;
@@ -69,7 +72,16 @@ renderer.setSize(container.clientWidth, container.clientHeight, false);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.25 : 1.5));
 renderer.setClearColor(0x000000, 1);
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFShadowMap;
+// PCF takes several cube taps per caster per fragment; phones are fill-rate
+// bound, so they get single-tap hard shadows.
+renderer.shadowMap.type = isMobile ? THREE.BasicShadowMap : THREE.PCFShadowMap;
+// three reads a freshly linked program's info log on first use, which blocks
+// the main thread until the driver has finished compiling it — on macOS that's
+// 100–300 ms of stall per program. Warm-up below compiles everything through
+// compileAsync (which polls KHR_parallel_shader_compile instead of blocking),
+// so the check only costs us on stragglers. Keep it on in dev to surface real
+// shader errors.
+renderer.debug.checkShaderErrors = import.meta.env?.DEV ?? false;
 
 const loadingManager = new THREE.LoadingManager();
 
@@ -105,8 +117,9 @@ const showLoadingError = () => {
   errored = true;
   loadingBar?.classList.add("error");
 };
-// loadBlocks only awaits the first block; the rest load detached, so their
-// failures arrive as unhandled rejections — catch both those and sync errors.
+// A block that fails after startup has awaited `totem.ready` surfaces through
+// the try/catch below, but one that fails before then arrives as an unhandled
+// rejection — catch both those and sync errors.
 window.addEventListener("unhandledrejection", showLoadingError);
 window.addEventListener("error", showLoadingError);
 
@@ -346,6 +359,25 @@ const updatePaging = () => {
   applyCollapsedLayout();
 };
 
+// Hand every still texture in every column to the GPU up front. Video textures
+// are skipped — they have no frame to upload until the element starts decoding,
+// and VideoEffect only starts one when it scrolls into focus.
+const uploadTextures = () => {
+  const seen = new Set();
+  const maps = ["map", "normalMap", "roughnessMap", "alphaMap", "emissiveMap"];
+  for (const col of columns) {
+    col.scene.traverse((node) => {
+      if (!node.isMesh || !node.material) return;
+      for (const key of maps) {
+        const texture = node.material[key];
+        if (!texture || texture.isVideoTexture || seen.has(texture)) continue;
+        seen.add(texture);
+        renderer.initTexture(texture);
+      }
+    });
+  }
+};
+
 layoutColumns();
 
 const onResize = () => {
@@ -356,8 +388,17 @@ const onResize = () => {
 window.addEventListener("resize", onResize);
 window.visualViewport?.addEventListener("resize", onResize);
 
+// The loading overlay is opaque black, so nothing drawn before it lifts is ever
+// seen — and drawing a half-loaded column is actively harmful, since each block
+// that lands changes the scene's light count and throws away every shader
+// program compiled for the count before it. Hold the render until the columns
+// are whole, then let the frames behind the remaining loading screen warm the
+// passes that compileAsync can't reach (post chain, shadow depth materials).
+let sceneReady = false;
+
 function animate() {
   requestAnimationFrame(animate);
+  if (!sceneReady) return;
   for (const col of columns) {
     // Collapsed mode hides all but the active (and sliding-in) column, and
     // ColumnsRenderPass doesn't draw the hidden ones — so skip their per-frame
@@ -381,13 +422,31 @@ animate();
 try {
   await new Promise((resolve) => setTimeout(resolve, 1500));
   await Promise.all(columns.map((col) => col.totem.loadBlocks(col.blocks)));
+  // Every block carries lights, and three rebuilds a material's program whenever
+  // the scene's light count changes — so precompiling a column that's still
+  // filling up just gets thrown away. Wait for the last block of each.
+  await Promise.all(columns.map((col) => col.totem.ready));
 
-  // Warm the GPU while the loading screen is still up: compile every column's
-  // shaders (incl. shadow depth) and upload its textures, so blocks don't hitch
-  // as they first render into view.
+  // Warm the GPU while the loading screen is still up, so nothing compiles or
+  // uploads once the scene is live and being scrolled. Settle each column's
+  // lighting first: compileAsync bakes the scene's current shadow-caster count
+  // into the programs it builds, and until update() has run once that count is
+  // still whatever the block specs asked for rather than the budget the column
+  // will actually hold to.
+  for (const col of columns) col.totem.update();
   await Promise.all(
     columns.map((col) => renderer.compileAsync(col.scene, col.camera)),
   );
+  // compileAsync only builds shader programs; a texture still uploads on the
+  // first frame that draws it, and a totem only has one block in frustum at a
+  // time — so left alone the uploads trickle in as you scroll, which is the
+  // other half of the opening stutter. Push them all now instead.
+  uploadTextures();
+
+  // First frames: these run behind the still-opaque loading screen and cover
+  // what compileAsync can't — the post-processing chain and the depth materials
+  // that only compile when a shadow map first renders.
+  sceneReady = true;
 
   // Let the eased loop glide the fill up to 100% rather than snapping it.
   targetProgress = 1;
