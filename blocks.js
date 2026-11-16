@@ -178,6 +178,21 @@ export const stylish = {
         position: [0, -3.2, 0],
       },
       {
+        url: asset("component_diamond.glb"),
+        // Spins, so it can't cast: shadow cubes are drawn once and frozen.
+        castShadow: false,
+        // Faceted gem look: a hue-rotating iridescent shader (see extras/gem.js).
+        type: "gem",
+        color: 0x59b8ff,
+        hueSpeed: 0.3,
+        dispersion: 0.85,
+        spin: { axis: "y", speed: 0.6 },
+        position: [0, -2.1, 0],
+        // Builds itself out of a wireframe, holds, dissolves, repeats (see
+        // extras/materialize.js).
+        // materialize: { color: 0xffffff, angle: 30 },
+      },
+      {
         object: () => {
           const geo = new THREE.PlaneGeometry(2.2, 3);
           const mat = new THREE.MeshBasicMaterial({

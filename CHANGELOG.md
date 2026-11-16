@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.2-alpha] - 2026-11-16
+
+### Added
+- `lib/extras/gem.js` — `GemEffect` class. Opt in via `type: "gem"` (with `color`, `hueSpeed`, `dispersion`, `shine`, `twinkle`) on any block or component spec; swaps in a faceted-jewel material whose fresnel-driven, hue-rotating iridescence, studio reflection and per-facet twinkles are injected into the emissive term, so it needs no environment map. Dims off-focus with the other emissive glows.
+- `lib/extras/materialize.js` — `MaterializeEffect` class. Opt in via `materialize: { ... }` on any block or component spec; the mesh builds bottom-up out of a glowing wireframe (sweep angle, timing, loop, lead, ghost, quad recovery and noise `turbulence` are configurable), holds, dissolves and repeats. Apply it after the other effects. Wired into the demo but not enabled on any block yet.
+- `lib/extras/video.js` — `VideoEffect.prime(timeout)` buffers and decodes the first frame of every in-focus video, then pauses, so it can be warmed behind a loading screen.
+- `lib/totem/totem.js` — `totem.ready` resolves once every block is placed, and `totem.shadowBudget` (default 3) sets how many lights may cast shadows at once.
+- Demo: a spinning gem diamond in the stylish block.
+
+### Changed
+- `lib/totem/totem.js` — the shadow-caster count is pinned to `shadowBudget` (the lights nearest focus always cast, lit or not) instead of following brightness, and point-light shadow cubes are drawn once and frozen, redrawn only when a caster joins the budget or a block wraps. Shadow-casting meshes must therefore not animate within their block.
+- `lib/totem/totem.js` — gem materials and LineSegments wireframes are tracked for the scroll/brightness fade.
+- `lib/totem/loaders.js` — desktop maps are capped at 2048 px.
+- `lib/totem/gestures.js` — collapsed-mode paging is easier to trigger: drags up to ~55° off horizontal lock as swipes (`swipeBias`).
+- Demo: page at 15% of width or 0.2 px/ms (was 25% / 0.35), with a 450 ms post-page cooldown (was 700 ms).
+- Demo: drop canvas MSAA (every frame already goes through the composer) and use `BasicShadowMap` on mobile.
+- Demo: page-dot and info-page logo glass styling tweaks.
+
+### Fixed
+- Demo: heavy shader-compile stutter for the first seconds after the loading screen lifts. Shaders are now warmed only once every block is placed, all still textures are uploaded up front, and nothing renders until the scene is ready (55 → 3 programs linked after reveal on an M-series Mac).
+- Demo: hitching the first time a hidden column pages into view — every column's in-focus videos are primed and each column is drawn once behind the loading screen.
+
 ## [0.3.1-alpha] - 2026-07-29
 
 ### Added

@@ -8,6 +8,8 @@ import { VideoEffect } from "./lib/extras/video.js";
 import { WaterEffect } from "./lib/extras/water.js";
 import { BulbEffect } from "./lib/extras/bulb.js";
 import { SpinEffect } from "./lib/extras/spin.js";
+import { GemEffect } from "./lib/extras/gem.js";
+import { MaterializeEffect } from "./lib/extras/materialize.js";
 import { Filters } from "./lib/extras/filters.js";
 import { ColumnsRenderPass } from "./lib/extras/columnsPass.js";
 import { columnBlocks } from "./blocks.js";
@@ -166,17 +168,24 @@ const columns = Array.from({ length: COLUMN_COUNT }, (_, i) => {
   const water = new WaterEffect();
   const bulb = new BulbEffect({ hz: 1.5 });
   const spin = new SpinEffect();
+  const gem = new GemEffect();
+  const materialize = new MaterializeEffect();
   const totem = new Totem({ loadingManager });
   totem._decorateBlock = ({ spec, root, components, componentRoots, group }) => {
     video.applyTo(root, spec, group);
     water.applyTo(root, spec);
     bulb.applyTo(root, spec);
     spin.applyTo(root, spec);
+    gem.applyTo(root, spec);
+    // Last: it injects into whatever material the others left on the mesh.
+    materialize.applyTo(root, spec);
     componentRoots.forEach((compRoot, ci) => {
       video.applyTo(compRoot, components[ci], group);
       water.applyTo(compRoot, components[ci]);
       bulb.applyTo(compRoot, components[ci]);
       spin.applyTo(compRoot, components[ci]);
+      gem.applyTo(compRoot, components[ci]);
+      materialize.applyTo(compRoot, components[ci]);
     });
   };
   totem._updateExtras = (t) => {
@@ -184,6 +193,8 @@ const columns = Array.from({ length: COLUMN_COUNT }, (_, i) => {
     water.update(t);
     bulb.update(t);
     spin.update(t);
+    gem.update(t);
+    materialize.update(t);
   };
   scene.add(totem);
 
@@ -195,6 +206,8 @@ const columns = Array.from({ length: COLUMN_COUNT }, (_, i) => {
     water,
     bulb,
     spin,
+    gem,
+    materialize,
     blocks: columnBlocks(i),
     rect: { x: 0, y: 0, w: 1, h: 1 },
     visible: true,
@@ -418,7 +431,7 @@ function animate() {
   for (const col of columns) {
     // Collapsed mode hides all but the active (and sliding-in) column, and
     // ColumnsRenderPass doesn't draw the hidden ones — so skip their per-frame
-    // CPU work too (mesh/light/emissive fades, water/bulb/spin, autoscroll).
+    // CPU work too (mesh/light/emissive fades, water/bulb/spin/gem/materialize, autoscroll).
     // Everything they'd compute is derived fresh from position when they next
     // become visible, so nothing goes stale. Still tick their video gate,
     // though: that's what pauses a column that just left the screen so it
