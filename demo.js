@@ -378,6 +378,22 @@ const uploadTextures = () => {
   }
 };
 
+// Draw every column once, hidden ones included. Collapsed mode only renders
+// the on-screen column, so without this a neighbour's first appearance —
+// mid-drag — is when three allocates its shadow cubes, draws all their faces,
+// compiles its depth materials and uploads its video frames. Run while the
+// loading screen still covers the canvas.
+const warmColumns = () => {
+  const saved = columns.map((col) => ({ visible: col.visible, rect: col.rect }));
+  const rect = columns[activeColumn].rect;
+  for (const col of columns) {
+    col.visible = true;
+    col.rect = rect;
+  }
+  filters.render();
+  columns.forEach((col, i) => Object.assign(col, saved[i]));
+};
+
 layoutColumns();
 
 const onResize = () => {
@@ -463,6 +479,11 @@ try {
       collapsed && COLUMN_PAGING ? "Scroll and swipe to explore" : "Scroll or drag to explore";
     setTimeout(() => toaster.show(hint, { id: "intro", duration: 4000 }), 600);
   }, 2500);
+
+  // The 2.5 s above is headroom enough to get every column's videos to a
+  // first frame (prime caps itself at 1.5 s) and then draw each column once.
+  await Promise.all(columns.map((col) => col.video.prime()));
+  warmColumns();
 } catch (err) {
   console.error("Scene failed to start:", err);
   showLoadingError();
