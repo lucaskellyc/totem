@@ -151,7 +151,7 @@ let snapTarget = null;
 // neighbour; `pageCooldownUntil` then holds off new swipes for a beat after it
 // lands. Together they stop a second flick from interrupting the first snap
 // (which would abort the pending page and spring back to the original column).
-const PAGE_COOLDOWN = 700; // ms to ignore further flicks after a page lands
+const PAGE_COOLDOWN = 450; // ms to ignore further flicks after a page lands
 let snapping = false;
 let pageCooldownUntil = 0;
 const pagingBusy = () => snapping || performance.now() < pageCooldownUntil;
@@ -330,9 +330,9 @@ const releaseColumns = (_dx, velocity) => {
   }
   if (pagingBusy()) return;
   const w = container.clientWidth;
-  const farEnough = Math.abs(dragX) > w * 0.25;
+  const farEnough = Math.abs(dragX) > w * 0.15;
   const flicked =
-    Math.abs(velocity) > 0.35 && Math.sign(velocity) === Math.sign(dragX);
+    Math.abs(velocity) > 0.2 && Math.sign(velocity) === Math.sign(dragX);
   snapTarget = (farEnough || flicked) && dragX !== 0 ? Math.sign(dragX) * w : 0;
   // Lock out further swipes until this page lands (and the cooldown elapses).
   if (snapTarget !== 0) snapping = true;
